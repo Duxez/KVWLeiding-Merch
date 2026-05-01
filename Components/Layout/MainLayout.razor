@@ -1,0 +1,158 @@
+﻿@using BitzArt.Blazor.Cookies
+@using System.Globalization
+@using Microsoft.AspNetCore.Localization
+@using Microsoft.Extensions.Localization
+@using Microsoft.FluentUI.AspNetCore.Components
+@using Icons = Microsoft.FluentUI.AspNetCore.Components.Icons
+@using kvwleidingmerch.Components.Form
+@using kvwleidingmerch.Data
+@inherits LayoutComponentBase
+@inject IDialogService DialogService
+@inject ICookieService CookieService
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<SharedResource> Localizer
+@inject AppDbContext DbContext
+
+<FluentDesignTheme Mode="@_themeMode" ModeChanged="OnThemeModeChangedAsync" StorageName="kvw-design-theme">
+    <div class="page @(_themeMode == DesignThemeModes.Dark ? "theme-dark" : "theme-light")">
+        <main>
+            <div class="top-row px-4">
+                <div class="language-switcher">
+                    <FluentSwitch Value="@(_themeMode == DesignThemeModes.Dark)"
+                                  ValueChanged="OnThemeSwitchChangedAsync"
+                                  Class="theme-toggle">
+                        <FluentIcon Value="@GetThemeIcon()"
+                                    Class="theme-toggle__icon" />
+                    </FluentSwitch>
+                    <FluentLabel Class="language-switcher__label">@Localizer["Language"]</FluentLabel>
+                    <FluentSelect TOption="string"
+                                  Value="@_selectedCulture"
+                                  ValueChanged="OnLanguageChangedAsync"
+                                  Width="140px"
+                                  AriaLabel="Select language"
+                                  Appearance="Appearance.Stealth">
+                        <FluentOption Value="nl-NL">Nederlands</FluentOption>
+                        <FluentOption Value="en-US">English</FluentOption>
+                    </FluentSelect>
+                </div>
+            </div>
+
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
+    </div>
+</FluentDesignTheme>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+<FluentDialogProvider />
+
+@code {
+    private static readonly TimeSpan CultureCookieLifetime = TimeSpan.FromDays(365);
+    private string _selectedCulture = "nl-NL";
+    private DesignThemeModes _themeMode = DesignThemeModes.Dark;
+
+    [SupplyParameterFromQuery]
+    [Parameter]
+    public string? url { get; set; }
+
+    public bool owner = false;
+
+    protected override void OnInitialized()
+    {
+        var accessUrl = DbContext.AccessLinks.OrderByDescending(a => a.CreatedAtUtc).FirstOrDefault();
+        var ownerUrl = DbContext.AccessLinks.OrderBy(a => a.Id).FirstOrDefault()?.UrlValue;
+
+        if (string.IsNullOrWhiteSpace(url) || (!string.Equals(url, accessUrl?.UrlValue) && !string.Equals(url, ownerUrl)))
+            NavigationManager.NotFound();
+
+        if (string.Equals(url, ownerUrl))
+            owner = true;
+
+        _selectedCulture = NormalizeCulture(CultureInfo.CurrentUICulture.Name);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        if (await HasValidEmailCookieAsync() || owner)
+            return;
+
+        DialogParameters parameters = new DialogParameters
+        {
+            Title = "KVW Tilburg Noord merch",
+            PrimaryAction = null,
+            SecondaryAction = null,
+            Width = "400px",
+            TrapFocus = true,
+            Modal = true,
+            PreventDismissOnOverlayClick = true,
+            ShowDismiss = false,
+            SecondaryActionEnabled = false,
+        };
+
+        await DialogService.ShowDialogAsync<EnterEmailForm>(parameters);
+    }
+
+    private Task OnThemeModeChangedAsync(DesignThemeModes mode)
+    {
+        _themeMode = mode;
+        return Task.CompletedTask;
+    }
+
+    private Task OnThemeSwitchChangedAsync(bool isDark)
+    {
+        _themeMode = isDark ? DesignThemeModes.Dark : DesignThemeModes.Light;
+        return Task.CompletedTask;
+    }
+
+    private Icon GetThemeIcon()
+        => _themeMode == DesignThemeModes.Dark
+            ? new Icons.Regular.Size20.WeatherMoon()
+            : new Icons.Regular.Size20.WeatherSunny();
+
+    private async Task OnLanguageChangedAsync(string? culture)
+    {
+        if (string.IsNullOrWhiteSpace(culture))
+            return;
+
+        await ChangeLanguageAsync(culture);
+    }
+
+    private async Task ChangeLanguageAsync(string culture)
+    {
+        var normalizedCulture = NormalizeCulture(culture);
+
+        if (_selectedCulture == normalizedCulture)
+            return;
+
+        _selectedCulture = normalizedCulture;
+
+        await CookieService.SetAsync(
+            CookieRequestCultureProvider.DefaultCookieName,
+            CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(normalizedCulture)),
+            DateTimeOffset.UtcNow.Add(CultureCookieLifetime));
+
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+    }
+
+    private static string NormalizeCulture(string culture)
+        => culture.StartsWith("nl", StringComparison.OrdinalIgnoreCase) ? "nl-NL" : "en-US";
+
+    private async Task<bool> HasValidEmailCookieAsync()
+    {
+        Cookie? email = await CookieService.GetAsync("email");
+        if (email != null && !string.IsNullOrWhiteSpace(email.Value))
+            return true;
+
+        await CookieService.RemoveAsync("email");
+        return false;
+    }
+}

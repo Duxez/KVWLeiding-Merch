@@ -1,0 +1,28 @@
+@using BitzArt.Blazor.Cookies
+@using Microsoft.Extensions.Localization
+@using Microsoft.FluentUI.AspNetCore.Components
+@using System.Text
+@inject IStringLocalizer<SharedResource> Localizer
+@inject ICookieService CookieService
+@implements IDialogContentComponent<string>
+
+<FluentDialogBody>
+    <p>@Localizer["EnterEmailLabel"]</p>
+    <FluentTextField @bind-Value="Content" autofocus />
+</FluentDialogBody>
+
+<FluentDialogFooter>
+    <FluentButton Appearance="Appearance.Accent" OnClick="SaveAsync">@Localizer["SaveButton"]</FluentButton>
+</FluentDialogFooter>
+
+@code {
+    [Parameter]
+    public string Content { get; set; } = default!;
+    [CascadingParameter]
+    public FluentDialog Dialog { get; set; } = default!;
+
+    private async Task SaveAsync() {
+        await CookieService.SetAsync("email", Convert.ToBase64String(Encoding.UTF8.GetBytes(Content)));
+        await Dialog.CloseAsync(Content);
+    }
+}
