@@ -2,6 +2,191 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+/* Selectable badge (size/color pickers on product cards) */
+.badge-selectable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.badge-unavailable {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Product card action row */
+.product-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 0.5rem;
+}
+
+/* Cart counter badge on the cart icon button */
+.cart-count-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: var(--accent-fill-rest, #0078d4);
+    color: #fff;
+    border-radius: 50%;
+    min-width: 22px;
+    height: 22px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 22px;
+    text-align: center;
+    padding: 0 4px;
+    pointer-events: none;
+}
+
+/* Floating cart button */
+.cart-fab {
+    position: fixed;
+    right: 1rem;
+    bottom: 1.75rem;
+    z-index: 1000;
+    display: inline-block;
+    width: 68px;
+    height: 68px;
+}
+
+@supports (right: env(safe-area-inset-right)) {
+    .cart-fab {
+        right: calc(1rem + env(safe-area-inset-right));
+        bottom: calc(1.75rem + env(safe-area-inset-bottom));
+    }
+}
+
+.cart-fab::part(control) {
+    width: 68px;
+    height: 68px;
+    min-width: 68px;
+    min-height: 68px;
+    padding: 0;
+    border-radius: 9999px;
+    background: var(--neutral-layer-3);
+    color: var(--neutral-foreground-rest);
+    border: 1px solid var(--neutral-stroke-rest);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.cart-fab::part(control):hover {
+    background: var(--neutral-layer-4);
+}
+
+.cart-fab::part(content) {
+    color: var(--neutral-foreground-rest);
+}
+
+.cart-fab .cart-count-badge {
+    top: 4px;
+    right: 4px;
+}
+
+/* Cart dialog items */
+.cart-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--neutral-stroke-rest, #e0e0e0);
+}
+
+.cart-item:last-child {
+    border-bottom: none;
+}
+
+.cart-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.cart-item-badges {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+/* Autocomplete: allow selected-option chips to wrap and prevent overflow */
+.autocomplete-wrap::part(control) {
+    height: auto;
+    min-height: 2.4rem;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.autocomplete-wrap fluent-badge,
+.autocomplete-wrap [part="selected-option"] {
+    flex-shrink: 0;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+}
+
+.product-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.product-card-image img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+}
+
+.product-card-image--placeholder {
+    width: 100%;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.3;
+}
+
+.product-card-body {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.product-title {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--neutral-foreground-rest);
+}
+
+.product-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.product-badges fluent-badge {
+    cursor: pointer;
+}
+
+.color-dot {
+    display: inline-block;
+    width: 0.8rem;
+    height: 0.8rem;
+    border-radius: 50%;
+    margin-right: 0.35rem;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    vertical-align: middle;
+}
+
 body {
     min-height: 100vh;
     margin: 0;

@@ -129,4 +129,16 @@
     <value>Taal</value>
     <comment/>
   </data>
+  <data name="AddProduct" xml:space="preserve">
+    <value>Product toevoegen</value>
+    <comment/>
+  </data>
+  <data name="GoToProductInfo" xml:space="preserve">
+    <value>Ga naar product informati</value>
+    <comment/>
+  </data>
+  <data name="AddToCart" xml:space="preserve">
+    <value>In winkelwagen</value>
+    <comment/>
+  </data>
 </root>

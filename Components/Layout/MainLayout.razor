@@ -12,11 +12,21 @@
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<SharedResource> Localizer
 @inject AppDbContext DbContext
+@inject CartService CartService
+@implements IDisposable
 
 <FluentDesignTheme Mode="@_themeMode" ModeChanged="OnThemeModeChangedAsync" StorageName="kvw-design-theme">
     <div class="page @(_themeMode == DesignThemeModes.Dark ? "theme-dark" : "theme-light")">
         <main>
             <div class="top-row px-4">
+                @if (owner)
+                {
+                    <FluentButton Appearance="Appearance.Accent"
+                                  IconStart="@(new Icons.Regular.Size20.Add())"
+                                  OnClick="OpenAddProductDialogAsync">
+                        @Localizer["AddProduct"]
+                    </FluentButton>
+                }
                 <div class="language-switcher">
                     <FluentSwitch Value="@(_themeMode == DesignThemeModes.Dark)"
                                   ValueChanged="OnThemeSwitchChangedAsync"
@@ -37,9 +47,13 @@
                 </div>
             </div>
 
-            <article class="content px-4">
-                @Body
-            </article>
+            <CascadingValue Name="IsOwner" Value="@owner">
+            <CascadingValue Name="IsAccess" Value="@access">
+                <article class="content px-4">
+                    @Body
+                </article>
+            </CascadingValue>
+            </CascadingValue>
         </main>
     </div>
 </FluentDesignTheme>
@@ -52,6 +66,20 @@
 
 <FluentDialogProvider />
 
+@if (access && !owner)
+{
+    <FluentButton Appearance="Appearance.Stealth"
+                  OnClick="OpenCartDialogAsync"
+                  Title="Winkelwagen"
+                  Class="cart-fab">
+        <FluentIcon Value="@(new Icons.Regular.Size20.Cart())" />
+        @if (CartService.TotalCount > 0)
+        {
+            <span class="cart-count-badge">@CartService.TotalCount</span>
+        }
+    </FluentButton>
+}
+
 @code {
     private static readonly TimeSpan CultureCookieLifetime = TimeSpan.FromDays(365);
     private string _selectedCulture = "nl-NL";
@@ -63,13 +91,18 @@
 
     public bool owner = false;
 
+    public bool access = false;
+
     protected override void OnInitialized()
     {
+        CartService.OnCartChanged += OnCartChanged;
         var accessUrl = DbContext.AccessLinks.OrderByDescending(a => a.CreatedAtUtc).FirstOrDefault();
         var ownerUrl = DbContext.AccessLinks.OrderBy(a => a.Id).FirstOrDefault()?.UrlValue;
 
         if (string.IsNullOrWhiteSpace(url) || (!string.Equals(url, accessUrl?.UrlValue) && !string.Equals(url, ownerUrl)))
             NavigationManager.NotFound();
+        else
+            access = true;
 
         if (string.Equals(url, ownerUrl))
             owner = true;
@@ -79,10 +112,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
-            return;
-
-        if (await HasValidEmailCookieAsync() || owner)
+        if (!firstRender || await HasValidEmailCookieAsync() || owner || !access)
             return;
 
         DialogParameters parameters = new DialogParameters
@@ -154,5 +184,44 @@
 
         await CookieService.RemoveAsync("email");
         return false;
+    }
+
+    private async Task OpenAddProductDialogAsync()
+    {
+        var model = new kvwleidingmerch.Data.AddProductModel();
+
+        var parameters = new DialogParameters<kvwleidingmerch.Data.AddProductModel>
+        {
+            Content = model,
+            Title = "Product toevoegen",
+            PrimaryAction = null,
+            SecondaryAction = null,
+            Width = "480px",
+            TrapFocus = true,
+            Modal = true,
+        };
+
+        await DialogService.ShowDialogAsync<AddProductDialog>(model, parameters);
+    }
+
+    private async Task OpenCartDialogAsync()
+    {
+        var parameters = new DialogParameters
+        {
+            Title = "Winkelwagen",
+            PrimaryAction = null,
+            SecondaryAction = null,
+            Width = "480px",
+            Modal = true,
+        };
+
+        await DialogService.ShowDialogAsync<CartDialog>(parameters);
+    }
+
+    private void OnCartChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        CartService.OnCartChanged -= OnCartChanged;
     }
 }

@@ -1,3 +1,9 @@
 
 bin/
 obj/
+
+kvwleidingmerch.db
+
+kvwleidingmerch.db-shm
+
+kvwleidingmerch.db-wal

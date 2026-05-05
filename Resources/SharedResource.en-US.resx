@@ -129,4 +129,16 @@
     <value>Language</value>
     <comment/>
   </data>
+  <data name="AddProduct" xml:space="preserve">
+    <value>Add product</value>
+    <comment/>
+  </data>
+  <data name="GoToProductInfo" xml:space="preserve">
+    <value>Open product info</value>
+    <comment/>
+  </data>
+  <data name="AddToCart" xml:space="preserve">
+    <value>Add to cart</value>
+    <comment/>
+  </data>
 </root>

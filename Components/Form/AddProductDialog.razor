@@ -1,0 +1,276 @@
+@using Microsoft.EntityFrameworkCore
+@using ProductColor = kvwleidingmerch.Data.Color
+@inject AppDbContext DbContext
+@inject IColorNameResolver ColorNameResolver
+@inject kvwleidingmerch.Data.ProductEventService ProductEventService
+@implements IDialogContentComponent<AddProductModel>
+
+<FluentDialogBody Style="overflow-y:auto;max-height:calc(90vh - 140px);padding-right:4px">
+    <FluentStack Orientation="Orientation.Vertical" VerticalGap="12">
+        <FluentTextField @bind-Value="Content.Title"
+                         Label="Titel"
+                         Placeholder="KVW T-shirt"
+                         Required
+                         style="width:100%" />
+
+        <FluentTextField @bind-Value="Content.Url"
+                         Label="Product URL"
+                         Placeholder="https://..."
+                         Required
+                         style="width:100%" />
+
+        <FluentLabel Weight="FontWeight.Bold">Maten</FluentLabel>
+        <FluentAutocomplete TOption="Size"
+                            AutoComplete="off"
+                            Placeholder="Zoek of typ een maat..."
+                            OnOptionsSearch="@OnSizesSearchAsync"
+                            OptionText="@(s => s.Name)"
+                            @bind-SelectedOptions="@_selectedSizes"
+                            MaximumSelectedOptions="30"
+                            Class="autocomplete-wrap"
+                            style="width:100%" />
+        <FluentLabel Style="font-size:0.8rem;opacity:0.7">
+            Onbekende maten worden automatisch aangemaakt bij opslaan.
+        </FluentLabel>
+
+        <FluentLabel Weight="FontWeight.Bold">Kleuren</FluentLabel>
+        <FluentAutocomplete TOption="ProductColor"
+                            AutoComplete="off"
+                            Placeholder="Zoek of typ een kleur..."
+                            OnOptionsSearch="@OnColorsSearchAsync"
+                            OptionText="@(c => string.IsNullOrWhiteSpace(c.HexCode) ? c.Name : $"{c.Name} ({c.HexCode})")"
+                            @bind-SelectedOptions="@_selectedColors"
+                            MaximumSelectedOptions="30"
+                            Class="autocomplete-wrap"
+                            style="width:100%" />
+        <FluentLabel Style="font-size:0.8rem;opacity:0.7">
+            Nieuwe kleuren worden automatisch aangemaakt met een hexcode op basis van de naam.
+        </FluentLabel>
+
+        @if (SelectedSizes.Any() && SelectedColors.Any())
+        {
+            <FluentLabel Weight="FontWeight.Bold">Niet beschikbare combinaties</FluentLabel>
+            <FluentLabel Style="font-size:0.8rem;opacity:0.7">
+                Selecteer per kleur welke maten niet beschikbaar zijn.
+            </FluentLabel>
+
+            @foreach (var color in SelectedColors)
+            {
+                <FluentLabel>@color.Name</FluentLabel>
+                <div class="product-badges">
+                    @foreach (var size in SelectedSizes)
+                    {
+                        var unavailable = IsUnavailable(size.Name, color.Name);
+                        <FluentBadge Appearance="@(unavailable ? Appearance.Accent : Appearance.Neutral)"
+                                     Class="badge-selectable"
+                                     @onclick="() => ToggleUnavailable(size.Name, color.Name)">@size.Name</FluentBadge>
+                    }
+                </div>
+            }
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_errorMessage))
+        {
+            <FluentLabel Style="color:#b42318">@_errorMessage</FluentLabel>
+        }
+    </FluentStack>
+</FluentDialogBody>
+
+<FluentDialogFooter>
+    <FluentButton OnClick="CancelAsync">Annuleren</FluentButton>
+    <FluentButton Appearance="Appearance.Accent"
+                  OnClick="SaveAsync"
+                  Disabled="@(string.IsNullOrWhiteSpace(Content.Title) || string.IsNullOrWhiteSpace(Content.Url))">
+        Opslaan
+    </FluentButton>
+</FluentDialogFooter>
+
+@code {
+    [Parameter]
+    public AddProductModel Content { get; set; } = default!;
+
+    [CascadingParameter]
+    public FluentDialog Dialog { get; set; } = default!;
+
+    private IEnumerable<Size> _selectedSizes = [];
+    private IEnumerable<ProductColor> _selectedColors = [];
+    private string? _errorMessage;
+    private readonly HashSet<string> _unavailableCombinations = new(StringComparer.OrdinalIgnoreCase);
+
+    private IEnumerable<Size> SelectedSizes => _selectedSizes
+        .Where(s => !string.IsNullOrWhiteSpace(s.Name))
+        .DistinctBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
+        .OrderBy(s => s.Name);
+
+    private IEnumerable<ProductColor> SelectedColors => _selectedColors
+        .Where(c => !string.IsNullOrWhiteSpace(c.Name))
+        .DistinctBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+        .OrderBy(c => c.Name);
+
+    private static string BuildCombinationKey(string sizeName, string colorName)
+        => $"{sizeName.Trim().ToLowerInvariant()}::{colorName.Trim().ToLowerInvariant()}";
+
+    private bool IsUnavailable(string sizeName, string colorName)
+        => _unavailableCombinations.Contains(BuildCombinationKey(sizeName, colorName));
+
+    private void ToggleUnavailable(string sizeName, string colorName)
+    {
+        var key = BuildCombinationKey(sizeName, colorName);
+        if (!_unavailableCombinations.Add(key))
+            _unavailableCombinations.Remove(key);
+    }
+
+    private async Task OnSizesSearchAsync(OptionsSearchEventArgs<Size> e)
+    {
+        var query = (e.Text ?? string.Empty).Trim();
+
+        var matches = await DbContext.Sizes
+            .Where(s => s.Name.Contains(query))
+            .OrderBy(s => s.Name)
+            .Take(10)
+            .ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(query) &&
+            !matches.Any(s => string.Equals(s.Name, query, StringComparison.OrdinalIgnoreCase)))
+        {
+            matches.Insert(0, new Size { Id = 0, Name = query });
+        }
+
+        e.Items = matches;
+    }
+
+    private async Task OnColorsSearchAsync(OptionsSearchEventArgs<ProductColor> e)
+    {
+        var query = (e.Text ?? string.Empty).Trim();
+
+        var matches = await DbContext.Colors
+            .Where(c => c.Name.Contains(query))
+            .OrderBy(c => c.Name)
+            .Take(10)
+            .ToListAsync();
+
+        if (!string.IsNullOrWhiteSpace(query) &&
+            !matches.Any(c => string.Equals(c.Name, query, StringComparison.OrdinalIgnoreCase)))
+        {
+            var resolvedHex = await ResolveHexCodeAsync(query);
+            matches.Insert(0, new ProductColor
+            {
+                Id = 0,
+                Name = query,
+                HexCode = resolvedHex ?? string.Empty,
+            });
+        }
+
+        e.Items = matches;
+    }
+
+    private async Task SaveAsync()
+    {
+        _errorMessage = null;
+
+        var product = new Product
+        {
+            Title = Content.Title,
+            Url = Content.Url,
+        };
+
+        var resolvedSizes = new List<Size>();
+        var resolvedColors = new List<ProductColor>();
+
+        foreach (var size in SelectedSizes)
+        {
+            Size resolved;
+
+            if (size.Id == 0)
+            {
+                resolved = await DbContext.Sizes
+                    .FirstOrDefaultAsync(s => s.Name == size.Name)
+                    ?? new Size { Name = size.Name };
+
+                if (resolved.Id == 0)
+                    DbContext.Sizes.Add(resolved);
+            }
+            else
+            {
+                resolved = size;
+            }
+
+            product.Sizes.Add(resolved);
+            resolvedSizes.Add(resolved);
+        }
+
+        foreach (var color in SelectedColors)
+        {
+            ProductColor resolved;
+
+            if (color.Id == 0)
+            {
+                resolved = await DbContext.Colors
+                    .FirstOrDefaultAsync(c => c.Name == color.Name)
+                    ?? new ProductColor
+                    {
+                        Name = color.Name,
+                        HexCode = string.Empty,
+                    };
+
+                if (resolved.Id == 0)
+                {
+                    var hex = await ResolveHexCodeAsync(resolved.Name);
+                    if (hex is null)
+                    {
+                        _errorMessage = $"Geen hexcode gevonden voor kleur '{resolved.Name}'.";
+                        return;
+                    }
+
+                    resolved.HexCode = hex;
+                    DbContext.Colors.Add(resolved);
+                }
+            }
+            else
+            {
+                resolved = color;
+            }
+
+            product.Colors.Add(resolved);
+            resolvedColors.Add(resolved);
+        }
+
+        foreach (var color in resolvedColors)
+        {
+            foreach (var size in resolvedSizes)
+            {
+                if (!IsUnavailable(size.Name, color.Name))
+                    continue;
+
+                product.UnavailableVariants.Add(new ProductUnavailableVariant
+                {
+                    Size = size,
+                    Color = color,
+                });
+            }
+        }
+
+        DbContext.Products.Add(product);
+        await DbContext.SaveChangesAsync();
+
+        ProductEventService.NotifyProductAdded();
+        await Dialog.CloseAsync(Content);
+    }
+
+    private async Task CancelAsync()
+    {
+        await Dialog.CancelAsync();
+    }
+
+    private async Task<string?> ResolveHexCodeAsync(string colorName)
+    {
+        try
+        {
+            return await ColorNameResolver.ResolveHexByNameAsync(colorName);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+}

@@ -1,7 +1,212 @@
 ﻿@page "/"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Localization
+@inject kvwleidingmerch.Data.AppDbContext DbContext
+@inject kvwleidingmerch.Data.ProductEventService ProductEventService
+@inject kvwleidingmerch.Data.CartService CartService
+@inject IStringLocalizer<SharedResource> Localizer
+@implements IDisposable
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Merch</PageTitle>
 
-<h1>Hello, world!</h1>
+@if (_products.Count == 0)
+{
+    <FluentLabel Style="padding:2rem;opacity:0.6">@Localizer["NoProductsAdded"]</FluentLabel>
+}
+else
+{
+    <div class="product-grid">
+        @foreach (var product in _products)
+        {
+            var pid = product.Id;
+            var selSize = _selectedSizes.GetValueOrDefault(pid);
+            var selColor = _selectedColors.GetValueOrDefault(pid);
+            var sizeOk = !product.Sizes.Any() || selSize != 0;
+            var colorOk = !product.Colors.Any() || selColor != 0;
+            var comboOk = selSize == 0 || selColor == 0 || IsCombinationAvailable(product, selSize, selColor);
+            var canAdd = sizeOk && colorOk && comboOk;
 
-Welcome to your new app.
+            <FluentCard class="product-card">
+                <div class="product-card-body">
+                    <h3 class="product-title">@product.Title</h3>
+
+                    @if (product.Sizes.Any())
+                    {
+                        <div class="product-badges">
+                            @foreach (var size in product.Sizes)
+                            {
+                                var sid = size.Id;
+                                var sizeSelected = selSize == sid;
+                                var sizeAvailable = selColor == 0 || IsCombinationAvailable(product, sid, selColor);
+                                @if (IsAccess && !IsOwner)
+                                {
+                                    @if (sizeAvailable)
+                                    {
+                                        <FluentBadge Appearance="@(sizeSelected ? Appearance.Accent : Appearance.Neutral)"
+                                                     Class="badge-selectable"
+                                                     @onclick="() => SelectSize(pid, sid)">@size.Name</FluentBadge>
+                                    }
+                                    else
+                                    {
+                                        <FluentBadge Appearance="Appearance.Neutral" Class="badge-unavailable">@size.Name</FluentBadge>
+                                    }
+                                }
+                                else
+                                {
+                                    <FluentBadge Appearance="Appearance.Accent">@size.Name</FluentBadge>
+                                }
+                            }
+                        </div>
+                    }
+
+                    @if (product.Colors.Any())
+                    {
+                        <div class="product-badges">
+                            @foreach (var color in product.Colors)
+                            {
+                                var cid = color.Id;
+                                var colorSelected = selColor == cid;
+                                var colorAvailable = selSize == 0 || IsCombinationAvailable(product, selSize, cid);
+                                @if (IsAccess && !IsOwner)
+                                {
+                                    @if (colorAvailable)
+                                    {
+                                        <FluentBadge Appearance="@(colorSelected ? Appearance.Accent : Appearance.Neutral)"
+                                                     Class="badge-selectable"
+                                                     @onclick="() => SelectColor(pid, cid)">
+                                            <span class="color-dot" style="background-color:@color.HexCode"></span>
+                                            @color.Name
+                                        </FluentBadge>
+                                    }
+                                    else
+                                    {
+                                        <FluentBadge Appearance="Appearance.Neutral" Class="badge-unavailable">
+                                            <span class="color-dot" style="background-color:@color.HexCode"></span>
+                                            @color.Name
+                                        </FluentBadge>
+                                    }
+                                }
+                                else
+                                {
+                                    <FluentBadge Appearance="Appearance.Neutral">
+                                        <span class="color-dot" style="background-color:@color.HexCode"></span>
+                                        @color.Name
+                                    </FluentBadge>
+                                }
+                            }
+                        </div>
+                    }
+
+                    <div class="product-card-actions">
+                        <FluentAnchor Href="@product.Url" Target="_blank">@Localizer["GoToProductInfo"]</FluentAnchor>
+                        @if (IsAccess && !IsOwner)
+                        {
+                            <FluentButton Appearance="Appearance.Accent"
+                                          Disabled="@(!canAdd)"
+                                          IconStart="@(new Icons.Regular.Size20.Cart())"
+                                          @onclick="() => AddToCart(product, selSize, selColor)">
+                                @Localizer["AddToCart"]
+                            </FluentButton>
+                        }
+                    </div>
+                </div>
+            </FluentCard>
+        }
+    </div>
+}
+
+@code {
+    [CascadingParameter(Name = "IsOwner")] public bool IsOwner { get; set; }
+    [CascadingParameter(Name = "IsAccess")] public bool IsAccess { get; set; }
+
+    private List<kvwleidingmerch.Data.Product> _products = [];
+    private readonly Dictionary<int, int> _selectedSizes = [];
+    private readonly Dictionary<int, int> _selectedColors = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        ProductEventService.OnProductAdded += OnProductAdded;
+        await LoadProductsAsync();
+    }
+
+    private async Task LoadProductsAsync()
+    {
+        _products = await DbContext.Products
+            .Include(p => p.Sizes)
+            .Include(p => p.Colors)
+            .Include(p => p.UnavailableVariants)
+            .OrderBy(p => p.Title)
+            .ToListAsync();
+    }
+
+    private void SelectSize(int productId, int sizeId)
+    {
+        if (_selectedSizes.GetValueOrDefault(productId) == sizeId)
+            _selectedSizes.Remove(productId);
+        else
+            _selectedSizes[productId] = sizeId;
+
+        var product = _products.FirstOrDefault(p => p.Id == productId);
+        var selectedColor = _selectedColors.GetValueOrDefault(productId);
+        if (product is not null && selectedColor != 0 && !IsCombinationAvailable(product, _selectedSizes.GetValueOrDefault(productId), selectedColor))
+            _selectedColors.Remove(productId);
+    }
+
+    private void SelectColor(int productId, int colorId)
+    {
+        if (_selectedColors.GetValueOrDefault(productId) == colorId)
+            _selectedColors.Remove(productId);
+        else
+            _selectedColors[productId] = colorId;
+
+        var product = _products.FirstOrDefault(p => p.Id == productId);
+        var selectedSize = _selectedSizes.GetValueOrDefault(productId);
+        if (product is not null && selectedSize != 0 && !IsCombinationAvailable(product, selectedSize, _selectedColors.GetValueOrDefault(productId)))
+            _selectedSizes.Remove(productId);
+    }
+
+    private static bool IsCombinationAvailable(kvwleidingmerch.Data.Product product, int sizeId, int colorId)
+    {
+        if (sizeId == 0 || colorId == 0)
+            return true;
+
+        return !product.UnavailableVariants.Any(v => v.SizeId == sizeId && v.ColorId == colorId);
+    }
+
+    private void AddToCart(kvwleidingmerch.Data.Product product, int sizeId, int colorId)
+    {
+        if (!IsCombinationAvailable(product, sizeId, colorId))
+            return;
+
+        var sizeName = product.Sizes.FirstOrDefault(s => s.Id == sizeId)?.Name ?? string.Empty;
+        var colorEntity = product.Colors.FirstOrDefault(c => c.Id == colorId);
+
+        CartService.AddItem(new kvwleidingmerch.Data.CartItem
+        {
+            ProductId = product.Id,
+            ProductTitle = product.Title,
+            SizeId = sizeId,
+            SizeName = sizeName,
+            ColorId = colorId,
+            ColorName = colorEntity?.Name ?? string.Empty,
+            ColorHex = colorEntity?.HexCode ?? string.Empty,
+        });
+
+        _selectedSizes.Remove(product.Id);
+        _selectedColors.Remove(product.Id);
+    }
+
+    private void OnProductAdded()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await LoadProductsAsync();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        ProductEventService.OnProductAdded -= OnProductAdded;
+    }
+}

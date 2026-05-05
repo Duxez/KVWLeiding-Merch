@@ -1,0 +1,60 @@
+@using kvwleidingmerch.Data
+@inject CartService CartService
+@implements IDialogContentComponent
+
+<FluentDialogBody>
+    @if (!CartService.Items.Any())
+    {
+        <FluentLabel Style="opacity:0.6">Je winkelwagen is leeg.</FluentLabel>
+    }
+    else
+    {
+        <FluentStack Orientation="Orientation.Vertical" VerticalGap="8">
+            @for (int i = 0; i < CartService.Items.Count; i++)
+            {
+                var item = CartService.Items[i];
+                var index = i;
+                <div class="cart-item">
+                    <div class="cart-item-info">
+                        <FluentLabel Typo="Typography.Subject">@item.ProductTitle</FluentLabel>
+                        <div class="cart-item-badges">
+                            <FluentBadge Appearance="Appearance.Accent">@item.SizeName</FluentBadge>
+                            <FluentBadge Appearance="Appearance.Neutral">
+                                @if (!string.IsNullOrWhiteSpace(item.ColorHex))
+                                {
+                                    <span class="color-dot" style="background-color:@item.ColorHex"></span>
+                                }
+                                @item.ColorName
+                            </FluentBadge>
+                        </div>
+                    </div>
+                    <FluentButton Appearance="Appearance.Stealth"
+                                  IconStart="@(new Icons.Regular.Size16.Delete())"
+                                  Title="Verwijderen"
+                                  @onclick="() => CartService.RemoveAt(index)" />
+                </div>
+            }
+        </FluentStack>
+    }
+</FluentDialogBody>
+
+<FluentDialogFooter>
+    @if (CartService.Items.Any())
+    {
+        <FluentButton Appearance="Appearance.Neutral" OnClick="ClearAsync">Leegmaken</FluentButton>
+    }
+    <FluentButton OnClick="CloseAsync">Sluiten</FluentButton>
+</FluentDialogFooter>
+
+@code {
+    [CascadingParameter]
+    public FluentDialog Dialog { get; set; } = default!;
+
+    private async Task CloseAsync() => await Dialog.CancelAsync();
+
+    private async Task ClearAsync()
+    {
+        CartService.Clear();
+        await Dialog.CancelAsync();
+    }
+}
