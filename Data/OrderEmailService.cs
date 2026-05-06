@@ -63,8 +63,8 @@ public sealed class OrderEmailService : IOrderEmailService
         var secureSocketOptions = _settings.UseSsl
             ? SecureSocketOptions.SslOnConnect
             : SecureSocketOptions.StartTlsWhenAvailable;
-
-        await smtpClient.ConnectAsync(_settings.SmtpHost, _settings.SmtpPort, secureSocketOptions, cancellationToken);
+        smtpClient.LocalEndPoint = new IPEndPoint(IPAddress.Any, 0);
+        await smtpClient.ConnectAsync(_settings.SmtpHost, 587, SecureSocketOptions.StartTls, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(_settings.UserName))
         {
