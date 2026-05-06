@@ -1,5 +1,6 @@
 @using Microsoft.Extensions.Localization
 @using System.Text
+@using System.Globalization
 @using BitzArt.Blazor.Cookies
 @using kvwleidingmerch.Data
 @inject CartService CartService
@@ -23,6 +24,7 @@
                 <div class="cart-item">
                     <div class="cart-item-info">
                         <FluentLabel Typo="Typography.Subject">@item.ProductTitle</FluentLabel>
+                        <FluentLabel Typo="Typography.Body">@item.UnitPrice.ToString("C", CultureInfo.CurrentCulture)</FluentLabel>
                         <div class="cart-item-badges">
                             <FluentBadge Appearance="Appearance.Accent">@item.SizeName</FluentBadge>
                             <FluentBadge>
@@ -40,6 +42,12 @@
                                   @onclick="() => CartService.RemoveAt(index)" />
                 </div>
             }
+        </FluentStack>
+
+        <FluentStack Orientation="Orientation.Horizontal"
+                     HorizontalAlignment="HorizontalAlignment.End"
+                     style="padding-top:8px;border-top:1px solid var(--neutral-stroke-rest, #e0e0e0)">
+            <FluentLabel Weight="FontWeight.Bold">Total: @CartTotal.ToString("C", CultureInfo.CurrentCulture)</FluentLabel>
         </FluentStack>
     }
 
@@ -78,6 +86,7 @@
 
     private bool _isSending;
     private string? _errorMessage;
+    private decimal CartTotal => CartService.Items.Sum(i => i.UnitPrice);
 
     private async Task CloseAsync() => await Dialog.CancelAsync();
 
@@ -105,9 +114,9 @@
             CartService.Clear();
             await Dialog.CloseAsync();
         }
-        catch
+        catch (Exception ex)
         {
-            _errorMessage = Localizer["OrderSendFailed"];
+            _errorMessage = ex.Message;
         }
         finally
         {

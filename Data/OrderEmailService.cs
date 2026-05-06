@@ -1,5 +1,6 @@
 using System.Text;
 using System.Net;
+using System.Globalization;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
@@ -91,6 +92,8 @@ public sealed class OrderEmailService : IOrderEmailService
     private static string BuildPlainTextBody(string customerEmail, IReadOnlyList<CartItem> items)
     {
         var body = new StringBuilder();
+        var total = items.Sum(i => i.UnitPrice);
+
         body.AppendLine("A new order was placed.");
         body.AppendLine();
         body.AppendLine($"Customer email: {customerEmail}");
@@ -101,8 +104,11 @@ public sealed class OrderEmailService : IOrderEmailService
         for (int i = 0; i < items.Count; i++)
         {
             var item = items[i];
-            body.AppendLine($"{i + 1}. {item.ProductTitle} | Size: {item.SizeName} | Color: {item.ColorName}");
+            body.AppendLine($"{i + 1}. {item.ProductTitle} | Size: {item.SizeName} | Color: {item.ColorName} | Price: {FormatMoney(item.UnitPrice)}");
         }
+
+        body.AppendLine();
+        body.AppendLine($"Total: {FormatMoney(total)}");
 
         return body.ToString();
     }
@@ -110,6 +116,7 @@ public sealed class OrderEmailService : IOrderEmailService
     private static string BuildHtmlBody(string customerEmail, IReadOnlyList<CartItem> items)
     {
         var itemsHtml = new StringBuilder();
+        var total = items.Sum(i => i.UnitPrice);
 
         for (int i = 0; i < items.Count; i++)
         {
@@ -118,6 +125,7 @@ public sealed class OrderEmailService : IOrderEmailService
             var sizeName = HtmlEncode(item.SizeName);
             var colorName = HtmlEncode(item.ColorName);
             var colorHex = NormalizeHex(item.ColorHex);
+            var linePrice = FormatMoney(item.UnitPrice);
 
             itemsHtml.Append($"""
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #e0e0e0;">
@@ -131,6 +139,7 @@ public sealed class OrderEmailService : IOrderEmailService
                             </span>
                         </div>
                     </div>
+                    <div style="font-size:14px;font-weight:700;color:#1f2328;white-space:nowrap;">{linePrice}</div>
                 </div>
                 """);
         }
@@ -149,6 +158,9 @@ public sealed class OrderEmailService : IOrderEmailService
                             <div style="font-size:15px;font-weight:600;margin-bottom:14px;">{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}</div>
                             <div style="font-size:15px;font-weight:700;margin-bottom:4px;">Items ({items.Count})</div>
                             <div>{itemsHtml}</div>
+                            <div style="display:flex;justify-content:flex-end;padding-top:12px;">
+                                <span style="font-size:16px;font-weight:700;color:#1f2328;">Total: {FormatMoney(total)}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -168,4 +180,7 @@ public sealed class OrderEmailService : IOrderEmailService
 
         return "#d2d0ce";
     }
+
+    private static string FormatMoney(decimal value)
+        => value.ToString("C", CultureInfo.GetCultureInfo("nl-NL"));
 }

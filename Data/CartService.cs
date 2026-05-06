@@ -8,6 +8,7 @@ public sealed class CartItem
 {
     public int ProductId { get; set; }
     public string ProductTitle { get; set; } = string.Empty;
+    public decimal UnitPrice { get; set; }
     public int SizeId { get; set; }
     public string SizeName { get; set; } = string.Empty;
     public int ColorId { get; set; }
