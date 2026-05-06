@@ -48,6 +48,22 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 var app = builder.Build();
 
+var emailSettings = app.Configuration
+    .GetSection(EmailSettings.SectionName)
+    .Get<EmailSettings>()
+    ?? new EmailSettings();
+
+app.Logger.LogInformation(
+    "Email settings loaded: SmtpHost={SmtpHost}, SmtpPort={SmtpPort}, UseSsl={UseSsl}, UserName={UserName}, Password={Password}, FromAddress={FromAddress}, FromName={FromName}, OrdersRecipientAddress={OrdersRecipientAddress}",
+    string.IsNullOrWhiteSpace(emailSettings.SmtpHost) ? "(empty)" : emailSettings.SmtpHost,
+    emailSettings.SmtpPort,
+    emailSettings.UseSsl,
+    string.IsNullOrWhiteSpace(emailSettings.UserName) ? "(empty)" : emailSettings.UserName,
+    MaskSecret(emailSettings.Password),
+    string.IsNullOrWhiteSpace(emailSettings.FromAddress) ? "(empty)" : emailSettings.FromAddress,
+    string.IsNullOrWhiteSpace(emailSettings.FromName) ? "(empty)" : emailSettings.FromName,
+    string.IsNullOrWhiteSpace(emailSettings.OrdersRecipientAddress) ? "(empty)" : emailSettings.OrdersRecipientAddress);
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -101,3 +117,11 @@ app.MapGet("/api/colors/resolve", (string name) =>
 });
 
 app.Run();
+
+static string MaskSecret(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value))
+        return "(empty)";
+
+    return new string('*', Math.Min(value.Length, 12));
+}
