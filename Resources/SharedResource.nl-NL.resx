@@ -121,6 +121,10 @@
     <value>Vul je emailadres in.</value>
     <comment/>
   </data>
+  <data name="EnterEmailInvalid" xml:space="preserve">
+    <value>Vul een geldig emailadres in.</value>
+    <comment/>
+  </data>
   <data name="SaveButton" xml:space="preserve">
     <value>Opslaan</value>
     <comment/>

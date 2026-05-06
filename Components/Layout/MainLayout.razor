@@ -1,5 +1,6 @@
 ﻿@using BitzArt.Blazor.Cookies
 @using System.Globalization
+@using System.Net.Mail
 @using Microsoft.AspNetCore.Localization
 @using Microsoft.Extensions.Localization
 @using Microsoft.FluentUI.AspNetCore.Components
@@ -185,8 +186,19 @@
     private async Task<bool> HasValidEmailCookieAsync()
     {
         Cookie? email = await CookieService.GetAsync("email");
-        if (email != null && !string.IsNullOrWhiteSpace(email.Value))
-            return true;
+
+        if (email is not null && !string.IsNullOrWhiteSpace(email.Value))
+        {
+            try
+            {
+                var decoded = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(email.Value)).Trim();
+                if (MailAddress.TryCreate(decoded, out _))
+                    return true;
+            }
+            catch
+            {
+            }
+        }
 
         await CookieService.RemoveAsync("email");
         return false;

@@ -121,6 +121,10 @@
     <value>Please enter your email address.</value>
     <comment/>
   </data>
+  <data name="EnterEmailInvalid" xml:space="preserve">
+    <value>Please enter a valid email address.</value>
+    <comment/>
+  </data>
   <data name="Save" xml:space="preserve">
     <value>Save</value>
     <comment/>

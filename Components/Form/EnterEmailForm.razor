@@ -1,6 +1,7 @@
 @using BitzArt.Blazor.Cookies
 @using Microsoft.Extensions.Localization
 @using Microsoft.FluentUI.AspNetCore.Components
+@using System.Net.Mail
 @using System.Text
 @inject IStringLocalizer<SharedResource> Localizer
 @inject ICookieService CookieService
@@ -9,6 +10,11 @@
 <FluentDialogBody>
     <FluentLabel>@Localizer["EnterEmailLabel"]</FluentLabel>
     <FluentTextField @bind-Value="Content" autofocus />
+
+    @if (!string.IsNullOrWhiteSpace(_validationMessage))
+    {
+        <FluentLabel Style="color:#b42318">@_validationMessage</FluentLabel>
+    }
 </FluentDialogBody>
 
 <FluentDialogFooter>
@@ -17,12 +23,29 @@
 
 @code {
     [Parameter]
-    public string Content { get; set; } = default!;
+    public string Content { get; set; } = string.Empty;
+
     [CascadingParameter]
     public FluentDialog Dialog { get; set; } = default!;
 
-    private async Task SaveAsync() {
-        await CookieService.SetAsync("email", Convert.ToBase64String(Encoding.UTF8.GetBytes(Content)));
+    private string? _validationMessage;
+
+    private async Task SaveAsync()
+    {
+        var email = Content.Trim();
+        if (!IsValidEmail(email))
+        {
+            _validationMessage = Localizer["EnterEmailInvalid"];
+            return;
+        }
+
+        _validationMessage = null;
+        Content = email;
+
+        await CookieService.SetAsync("email", Convert.ToBase64String(Encoding.UTF8.GetBytes(email)));
         await Dialog.CloseAsync(Content);
     }
+
+    private static bool IsValidEmail(string email)
+        => !string.IsNullOrWhiteSpace(email) && MailAddress.TryCreate(email, out _);
 }
