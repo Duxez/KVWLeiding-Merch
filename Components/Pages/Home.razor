@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Localization
+@using System.Globalization
 @inject kvwleidingmerch.Data.AppDbContext DbContext
 @inject kvwleidingmerch.Data.ProductEventService ProductEventService
 @inject kvwleidingmerch.Data.CartService CartService
@@ -29,6 +30,7 @@ else
             <FluentCard class="product-card">
                 <div class="product-card-body">
                     <h3 class="product-title">@product.Title</h3>
+                    <FluentLabel Typo="Typography.Body">@product.Price.ToString("C", CultureInfo.CurrentCulture)</FluentLabel>
 
                     @if (product.Sizes.Any())
                     {

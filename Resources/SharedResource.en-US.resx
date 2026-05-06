@@ -173,4 +173,8 @@
     <value>No products found</value>
     <comment/>
   </data>
+  <data name="Price" xml:space="preserve">
+    <value>Price</value>
+    <comment/>
+  </data>
 </root>

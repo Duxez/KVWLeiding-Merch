@@ -21,6 +21,14 @@
                          Required
                          style="width:100%" />
 
+        <FluentNumberField TValue="decimal"
+                   @bind-Value="Content.Price"
+                           Label="@PriceLabel"
+                   Step="0.01"
+                   Min="0"
+                   Required
+                   style="width:100%" />
+
         <FluentLabel Weight="FontWeight.Bold">Maten</FluentLabel>
         <FluentAutocomplete TOption="Size"
                             AutoComplete="off"
@@ -82,7 +90,7 @@
     <FluentButton OnClick="CancelAsync">@Localizer["Cancel"]</FluentButton>
     <FluentButton Appearance="Appearance.Accent"
                   OnClick="SaveAsync"
-                  Disabled="@(string.IsNullOrWhiteSpace(Content.Title) || string.IsNullOrWhiteSpace(Content.Url))">
+                  Disabled="@(string.IsNullOrWhiteSpace(Content.Title) || string.IsNullOrWhiteSpace(Content.Url) || Content.Price <= 0)">
         @Localizer["Save"]
     </FluentButton>
 </FluentDialogFooter>
@@ -98,6 +106,7 @@
     private IEnumerable<ProductColor> _selectedColors = [];
     private string? _errorMessage;
     private readonly HashSet<string> _unavailableCombinations = new(StringComparer.OrdinalIgnoreCase);
+    private string PriceLabel => Localizer["Price"];
 
     private IEnumerable<Size> SelectedSizes => _selectedSizes
         .Where(s => !string.IsNullOrWhiteSpace(s.Name))
@@ -174,6 +183,7 @@
         {
             Title = Content.Title,
             Url = Content.Url,
+            Price = Content.Price,
         };
 
         var resolvedSizes = new List<Size>();

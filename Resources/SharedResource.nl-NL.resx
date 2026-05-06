@@ -173,4 +173,8 @@
     <value>Geen producten gevonden</value>
     <comment/>
   </data>
+  <data name="Price" xml:space="preserve">
+    <value>Prijs</value>
+    <comment/>
+  </data>
 </root>

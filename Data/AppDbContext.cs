@@ -33,6 +33,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(p => p.Url)
                 .HasMaxLength(500)
                 .IsRequired();
+            entity.Property(p => p.Price)
+                .HasColumnType("decimal(10,2)")
+                .IsRequired();
             entity.HasMany(p => p.Sizes)
                 .WithMany(s => s.Products);
             entity.HasMany(p => p.Colors)
@@ -101,6 +104,8 @@ public sealed class Product
     public string Title { get; set; } = string.Empty;
 
     public string Url { get; set; } = string.Empty;
+
+    public decimal Price { get; set; }
 
     public ICollection<Size> Sizes { get; set; } = [];
 
