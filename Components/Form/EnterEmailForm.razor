@@ -7,7 +7,7 @@
 @implements IDialogContentComponent<string>
 
 <FluentDialogBody>
-    <p>@Localizer["EnterEmailLabel"]</p>
+    <FluentLabel>@Localizer["EnterEmailLabel"]</FluentLabel>
     <FluentTextField @bind-Value="Content" autofocus />
 </FluentDialogBody>
 

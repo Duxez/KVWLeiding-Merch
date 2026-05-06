@@ -169,12 +169,8 @@
     <value>Verstuur bestelling</value>
     <comment/>
   </data>
-  <data name="OrderEmailMissing" xml:space="preserve">
-    <value>Je e-mailadres ontbreekt of is ongeldig. Vul je e-mailadres opnieuw in.</value>
-    <comment/>
-  </data>
-  <data name="OrderSendFailed" xml:space="preserve">
-    <value>Je bestelling kon nu niet worden verstuurd. Probeer het later opnieuw.</value>
+  <data name="NoProductsAdded" xml:space="preserve">
+    <value>Geen producten gevonden</value>
     <comment/>
   </data>
 </root>

@@ -169,12 +169,8 @@
     <value>Send order</value>
     <comment/>
   </data>
-  <data name="OrderEmailMissing" xml:space="preserve">
-    <value>Your email address is missing or invalid. Please re-enter your email.</value>
-    <comment/>
-  </data>
-  <data name="OrderSendFailed" xml:space="preserve">
-    <value>Could not send your order right now. Please try again later.</value>
+  <data name="NoProductsAdded" xml:space="preserve">
+    <value>No products found</value>
     <comment/>
   </data>
 </root>
