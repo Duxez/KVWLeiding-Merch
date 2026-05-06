@@ -1,0 +1,29 @@
+services:
+  kvwleidingmerch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kvwleidingmerch:latest
+    container_name: kvwleidingmerch
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Data Source=/app/data/kvwleidingmerch.db
+      AccessLinks__OwnerUrl: ${ACCESS_LINK_OWNER_URL:-}
+      AccessLinks__AccessUrl: ${ACCESS_LINK_ACCESS_URL:-}
+      Email__SmtpHost: ${EMAIL_SMTP_HOST:-}
+      Email__SmtpPort: ${EMAIL_SMTP_PORT:-587}
+      Email__UseSsl: ${EMAIL_USE_SSL:-false}
+      Email__UserName: ${EMAIL_USER_NAME:-}
+      Email__Password: ${EMAIL_PASSWORD:-}
+      Email__FromAddress: ${EMAIL_FROM_ADDRESS:-}
+      Email__FromName: ${EMAIL_FROM_NAME:-KVW Merch}
+      Email__OrdersRecipientAddress: ${EMAIL_ORDERS_RECIPIENT_ADDRESS:-}
+    ports:
+      - "8080:8080"
+    volumes:
+      - kvwleidingmerch-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  kvwleidingmerch-data:

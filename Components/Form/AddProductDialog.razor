@@ -1,8 +1,10 @@
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Localization
 @using ProductColor = kvwleidingmerch.Data.Color
 @inject AppDbContext DbContext
 @inject IColorNameResolver ColorNameResolver
 @inject kvwleidingmerch.Data.ProductEventService ProductEventService
+@inject IStringLocalizer<SharedResource> Localizer
 @implements IDialogContentComponent<AddProductModel>
 
 <FluentDialogBody Style="overflow-y:auto;max-height:calc(90vh - 140px);padding-right:4px">
@@ -77,11 +79,11 @@
 </FluentDialogBody>
 
 <FluentDialogFooter>
-    <FluentButton OnClick="CancelAsync">Annuleren</FluentButton>
+    <FluentButton OnClick="CancelAsync">@Localizer["Cancel"]</FluentButton>
     <FluentButton Appearance="Appearance.Accent"
                   OnClick="SaveAsync"
                   Disabled="@(string.IsNullOrWhiteSpace(Content.Title) || string.IsNullOrWhiteSpace(Content.Url))">
-        Opslaan
+        @Localizer["Save"]
     </FluentButton>
 </FluentDialogFooter>
 

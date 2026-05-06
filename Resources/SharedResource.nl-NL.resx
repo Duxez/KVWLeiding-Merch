@@ -134,11 +134,47 @@
     <comment/>
   </data>
   <data name="GoToProductInfo" xml:space="preserve">
-    <value>Ga naar product informati</value>
+    <value>Ga naar product informatie</value>
     <comment/>
   </data>
   <data name="AddToCart" xml:space="preserve">
     <value>In winkelwagen</value>
+    <comment/>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Verwijderen</value>
+    <comment/>
+  </data>
+  <data name="EmptyCart" xml:space="preserve">
+    <value>Leegmaken</value>
+    <comment/>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Sluiten</value>
+    <comment/>
+  </data>
+  <data name="CartIsEmpty" xml:space="preserve">
+    <value>Je winkelwagen is leeg.</value>
+    <comment/>
+  </data>
+  <data name="Cart" xml:space="preserve">
+    <value>Winkelwagen</value>
+    <comment/>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuleren</value>
+    <comment/>
+  </data>
+  <data name="SendOrder" xml:space="preserve">
+    <value>Verstuur bestelling</value>
+    <comment/>
+  </data>
+  <data name="OrderEmailMissing" xml:space="preserve">
+    <value>Je e-mailadres ontbreekt of is ongeldig. Vul je e-mailadres opnieuw in.</value>
+    <comment/>
+  </data>
+  <data name="OrderSendFailed" xml:space="preserve">
+    <value>Je bestelling kon nu niet worden verstuurd. Probeer het later opnieuw.</value>
     <comment/>
   </data>
 </root>

@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="BitzArt.Blazor.Cookies.Client" Version="1.5.2" />
+    <PackageReference Include="MailKit" Version="4.8.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

@@ -1,11 +1,17 @@
+@using Microsoft.Extensions.Localization
+@using System.Text
+@using BitzArt.Blazor.Cookies
 @using kvwleidingmerch.Data
 @inject CartService CartService
+@inject ICookieService CookieService
+@inject IOrderEmailService OrderEmailService
+@inject IStringLocalizer<SharedResource> Localizer
 @implements IDialogContentComponent
 
 <FluentDialogBody>
     @if (!CartService.Items.Any())
     {
-        <FluentLabel Style="opacity:0.6">Je winkelwagen is leeg.</FluentLabel>
+        <FluentLabel Style="opacity:0.6">@Localizer["CartIsEmpty"]</FluentLabel>
     }
     else
     {
@@ -19,7 +25,7 @@
                         <FluentLabel Typo="Typography.Subject">@item.ProductTitle</FluentLabel>
                         <div class="cart-item-badges">
                             <FluentBadge Appearance="Appearance.Accent">@item.SizeName</FluentBadge>
-                            <FluentBadge Appearance="Appearance.Neutral">
+                            <FluentBadge>
                                 @if (!string.IsNullOrWhiteSpace(item.ColorHex))
                                 {
                                     <span class="color-dot" style="background-color:@item.ColorHex"></span>
@@ -30,25 +36,48 @@
                     </div>
                     <FluentButton Appearance="Appearance.Stealth"
                                   IconStart="@(new Icons.Regular.Size16.Delete())"
-                                  Title="Verwijderen"
+                                  Title="@Localizer["Delete"]"
                                   @onclick="() => CartService.RemoveAt(index)" />
                 </div>
             }
         </FluentStack>
     }
+
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <FluentLabel Style="color:#b42318">@_errorMessage</FluentLabel>
+    }
 </FluentDialogBody>
 
 <FluentDialogFooter>
-    @if (CartService.Items.Any())
-    {
-        <FluentButton Appearance="Appearance.Neutral" OnClick="ClearAsync">Leegmaken</FluentButton>
-    }
-    <FluentButton OnClick="CloseAsync">Sluiten</FluentButton>
+    <FluentStack Orientation="Orientation.Horizontal"
+                 VerticalAlignment="VerticalAlignment.Center"
+                 HorizontalGap="8"
+                 style="width:100%;display:flex;flex-wrap:nowrap;align-items:center">
+        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8">
+            <FluentButton OnClick="CloseAsync">@Localizer["Close"]</FluentButton>
+            @if (CartService.Items.Any())
+            {
+                <FluentButton OnClick="ClearAsync">@Localizer["EmptyCart"]</FluentButton>
+            }
+        </FluentStack>
+
+        <div style="margin-left:auto;display:flex;align-items:center">
+            <FluentButton Appearance="Appearance.Accent"
+                          OnClick="SendOrderAsync"
+                          Disabled="@(!CartService.Items.Any() || _isSending)">
+                @Localizer["SendOrder"]
+            </FluentButton>
+        </div>
+    </FluentStack>
 </FluentDialogFooter>
 
 @code {
     [CascadingParameter]
     public FluentDialog Dialog { get; set; } = default!;
+
+    private bool _isSending;
+    private string? _errorMessage;
 
     private async Task CloseAsync() => await Dialog.CancelAsync();
 
@@ -56,5 +85,51 @@
     {
         CartService.Clear();
         await Dialog.CancelAsync();
+    }
+
+    private async Task SendOrderAsync()
+    {
+        _errorMessage = null;
+        _isSending = true;
+
+        try
+        {
+            var customerEmail = await GetCustomerEmailAsync();
+            if (string.IsNullOrWhiteSpace(customerEmail))
+            {
+                _errorMessage = Localizer["OrderEmailMissing"];
+                return;
+            }
+
+            await OrderEmailService.SendOrderAsync(customerEmail, CartService.Items);
+            CartService.Clear();
+            await Dialog.CloseAsync();
+        }
+        catch
+        {
+            _errorMessage = Localizer["OrderSendFailed"];
+        }
+        finally
+        {
+            _isSending = false;
+        }
+    }
+
+    private async Task<string?> GetCustomerEmailAsync()
+    {
+        Cookie? emailCookie = await CookieService.GetAsync("email");
+        if (emailCookie is null || string.IsNullOrWhiteSpace(emailCookie.Value))
+            return null;
+
+        try
+        {
+            var bytes = Convert.FromBase64String(emailCookie.Value);
+            var decoded = Encoding.UTF8.GetString(bytes).Trim();
+            return string.IsNullOrWhiteSpace(decoded) ? null : decoded;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

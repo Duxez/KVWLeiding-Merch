@@ -70,7 +70,7 @@
 {
     <FluentButton Appearance="Appearance.Stealth"
                   OnClick="OpenCartDialogAsync"
-                  Title="Winkelwagen"
+                  Title="@Localizer["Cart"]"
                   Class="cart-fab">
         <FluentIcon Value="@(new Icons.Regular.Size20.Cart())" />
         @if (CartService.TotalCount > 0)
@@ -112,7 +112,13 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || await HasValidEmailCookieAsync() || owner || !access)
+        if (!firstRender)
+            return;
+
+        await CartService.InitializeAsync();
+        StateHasChanged();
+
+        if (await HasValidEmailCookieAsync() || owner || !access)
             return;
 
         DialogParameters parameters = new DialogParameters
@@ -193,7 +199,7 @@
         var parameters = new DialogParameters<kvwleidingmerch.Data.AddProductModel>
         {
             Content = model,
-            Title = "Product toevoegen",
+            Title = Localizer["AddProduct"],
             PrimaryAction = null,
             SecondaryAction = null,
             Width = "480px",
@@ -208,7 +214,7 @@
     {
         var parameters = new DialogParameters
         {
-            Title = "Winkelwagen",
+            Title = Localizer["Cart"],
             PrimaryAction = null,
             SecondaryAction = null,
             Width = "480px",
