@@ -1,5 +1,5 @@
 services:
-  kvwleidingmerch:
+  cvkvw:
     build:
       context: .
       dockerfile: Dockerfile
