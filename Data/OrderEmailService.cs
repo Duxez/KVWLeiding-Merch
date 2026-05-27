@@ -49,7 +49,7 @@ public sealed class OrderEmailService : IOrderEmailService
             message.To.Add(MailboxAddress.Parse(recipient));
         }
 
-        message.Subject = "KVW Merch order";
+        message.Subject = (_settings.Title + " order") ?? "KVW Merch order";
 
         var bodyBuilder = new BodyBuilder
         {

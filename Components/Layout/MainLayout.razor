@@ -14,6 +14,7 @@
 @inject IStringLocalizer<SharedResource> Localizer
 @inject AppDbContext DbContext
 @inject CartService CartService
+@inject Microsoft.Extensions.Options.IOptions<EmailSettings> EmailOptions
 @implements IDisposable
 
 <FluentDesignTheme Mode="@_themeMode" ModeChanged="OnThemeModeChangedAsync" StorageName="kvw-design-theme">
@@ -94,6 +95,17 @@
 
     public bool access = false;
 
+    private string InitialEmailDialogTitle
+    {
+        get
+        {
+            var configuredTitle = EmailOptions.Value.Title;
+            return string.IsNullOrWhiteSpace(configuredTitle)
+                ? "KVW Tilburg Noord merch"
+                : configuredTitle;
+        }
+    }
+
     protected override void OnInitialized()
     {
         CartService.OnCartChanged += OnCartChanged;
@@ -124,7 +136,7 @@
 
         DialogParameters parameters = new DialogParameters
         {
-            Title = "KVW Tilburg Noord merch",
+            Title = InitialEmailDialogTitle,
             PrimaryAction = null,
             SecondaryAction = null,
             Width = "400px",

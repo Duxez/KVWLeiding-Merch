@@ -19,6 +19,7 @@ services:
       Email__FromAddress: ${EMAIL_FROM_ADDRESS:-}
       Email__FromName: ${EMAIL_FROM_NAME:-KVW Merch}
       Email__OrdersRecipientAddress: ${EMAIL_ORDERS_RECIPIENT_ADDRESS:-}
+      Email__Title: ${EMAIL_TITLE:-KVW Tilburg Noord merch}
     ports:
       - "8080:8080"
     volumes:
