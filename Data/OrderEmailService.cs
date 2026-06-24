@@ -56,14 +56,15 @@ public sealed class OrderEmailService : IOrderEmailService
 
         try
         {
-            var plainTextBody = BuildPlainTextBody(customerEmail, items);
-            var htmlBody = BuildHtmlBody(customerEmail, items);
             var subject = (_settings.Title + " order") ?? "KVW Merch order";
+            var fromName = !string.IsNullOrWhiteSpace(_settings.Title) ? _settings.Title : "KVW Merch";
+            var plainTextBody = BuildPlainTextBody(customerEmail, items);
+            var htmlBody = BuildHtmlBody(customerEmail, items, fromName);
 
             if (!string.IsNullOrWhiteSpace(customerEmail))
             {
                 var customerMessage = new MimeMessage();
-                customerMessage.From.Add(new MailboxAddress(_settings.FromName ?? "KVW Merch", fromAddress));
+                customerMessage.From.Add(new MailboxAddress(fromName, fromAddress));
                 customerMessage.To.Add(MailboxAddress.Parse(customerEmail.Trim()));
                 customerMessage.Subject = subject;
                 customerMessage.Body = new TextPart("html") { Text = htmlBody };
@@ -73,7 +74,7 @@ public sealed class OrderEmailService : IOrderEmailService
             if (adminEmails.Count > 0)
             {
                 var adminMessage = new MimeMessage();
-                adminMessage.From.Add(new MailboxAddress(_settings.FromName ?? "KVW Merch", fromAddress));
+                adminMessage.From.Add(new MailboxAddress(fromName, fromAddress));
                 foreach (var adminEmail in adminEmails)
                 {
                     if (!string.IsNullOrWhiteSpace(adminEmail))
@@ -129,7 +130,7 @@ public sealed class OrderEmailService : IOrderEmailService
         return body.ToString();
     }
 
-    private static string BuildHtmlBody(string customerEmail, IReadOnlyList<CartItem> items)
+    private static string BuildHtmlBody(string customerEmail, IReadOnlyList<CartItem> items, string fromName)
     {
         var html = new StringBuilder();
         var total = items.Sum(i => i.UnitPrice);
@@ -139,7 +140,7 @@ public sealed class OrderEmailService : IOrderEmailService
         html.AppendLine("<body style=\"margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Arial,sans-serif;color:#1f2328;\">");
         html.AppendLine("    <div style=\"max-width:640px;margin:24px auto;padding:0 12px;\">");
         html.AppendLine("        <div style=\"background:#ffffff;border:1px solid #e1dfdd;border-radius:12px;overflow:hidden;\">");
-        html.AppendLine("            <div style=\"padding:16px 20px;background:#0f6cbd;color:#ffffff;font-size:18px;font-weight:700;\">KVW Merch order</div>");
+        html.AppendLine($"            <div style=\"padding:16px 20px;background:#0f6cbd;color:#ffffff;font-size:18px;font-weight:700;\">{fromName} order</div>");
         html.AppendLine("            <div style=\"padding:16px 20px;\">");
         html.AppendLine("                <div style=\"font-size:14px;color:#605e5c;margin-bottom:4px;\">Customer email</div>");
         html.Append($"                <div style=\"font-size:15px;font-weight:600;margin-bottom:14px;\">");
