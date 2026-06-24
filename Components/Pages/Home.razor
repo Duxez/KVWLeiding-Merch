@@ -170,7 +170,7 @@ else
             .Include(p => p.Sizes)
             .Include(p => p.Colors)
             .Include(p => p.UnavailableVariants)
-            .OrderBy(p => p.Title)
+            .OrderByDescending(p => p.Id)
             .ToListAsync();
     }
 
