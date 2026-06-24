@@ -269,4 +269,16 @@
   <data name="InvalidTimeFormat" xml:space="preserve">
     <value>Invalid time format. Use HH:mm.</value>
   </data>
+  <data name="ManageOrders" xml:space="preserve">
+    <value>Manage Orders</value>
+  </data>
+  <data name="NoOrders" xml:space="preserve">
+    <value>No orders found.</value>
+  </data>
+  <data name="DeleteOrderConfirmation" xml:space="preserve">
+    <value>Are you sure you want to delete the order for {0} (ID: {1})?</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
 </root>

@@ -269,4 +269,16 @@
   <data name="InvalidTimeFormat" xml:space="preserve">
     <value>Ongeldig tijdformaat. Gebruik UU:MM.</value>
   </data>
+  <data name="ManageOrders" xml:space="preserve">
+    <value>Bestellingen beheren</value>
+  </data>
+  <data name="NoOrders" xml:space="preserve">
+    <value>Geen bestellingen gevonden.</value>
+  </data>
+  <data name="DeleteOrderConfirmation" xml:space="preserve">
+    <value>Weet u zeker dat u de bestelling voor {0} (ID: {1}) wilt verwijderen?</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Vernieuwen</value>
+  </data>
 </root>

@@ -116,6 +116,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(o => o.Status)
                 .HasMaxLength(50)
                 .HasDefaultValue("Pending");
+            entity.Property(o => o.IsSentInScheduledEmail);
             entity.HasIndex(o => o.CreatedAtUtc);
         });
 
@@ -247,6 +248,8 @@ public sealed class Order
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public string Status { get; set; } = "Pending";
+
+    public bool IsSentInScheduledEmail { get; set; } = false;
 
     public ICollection<OrderItem> Items { get; set; } = [];
 }

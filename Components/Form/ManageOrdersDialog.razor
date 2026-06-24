@@ -1,0 +1,161 @@
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Localization
+@using System.Globalization
+@using Microsoft.FluentUI.AspNetCore.Components
+@inject AppDbContext DbContext
+@inject IStringLocalizer<SharedResource> Localizer
+@implements IDialogContentComponent
+
+<FluentDialogBody Style="overflow-y:auto;max-height:calc(90vh - 140px);padding-right:4px">
+    @if (_orders.Count == 0)
+    {
+        <FluentLabel Style="opacity:0.6">@Localizer["NoOrders"]</FluentLabel>
+    }
+    else
+    {
+        <FluentStack Orientation="Orientation.Vertical" VerticalGap="12">
+            @foreach (var order in _orders)
+            {
+                <div class="order-card" style="background:#ffffff;border:1px solid #e1dfdd;border-radius:12px;overflow:hidden;margin-bottom:16px;">
+                    <div style="padding:16px 20px;background:#0f6cbd;color:#ffffff;font-size:16px;font-weight:700;">
+                        Order - @order.CustomerEmail
+                    </div>
+                    <div style="padding:16px 20px;">
+                        <div style="font-size:14px;color:#605e5c;margin-bottom:4px;">Date (UTC)</div>
+                        <div style="font-size:15px;font-weight:600;margin-bottom:14px;">@order.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</div>
+                        <div style="font-size:14px;color:#605e5c;margin-bottom:4px;">Status</div>
+                        <div style="font-size:15px;font-weight:600;margin-bottom:14px;">@order.Status</div>
+                        <div style="font-size:14px;color:#605e5c;margin-bottom:4px;">Included in scheduled email</div>
+                        <div style="font-size:15px;font-weight:600;margin-bottom:14px;">@(order.IsSentInScheduledEmail ? "Yes" : "No")</div>
+                        <div style="font-size:15px;font-weight:700;margin-bottom:4px;">Items (@order.Items.Count)</div>
+                        @foreach (var item in order.Items)
+                        {
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #e0e0e0;">
+                                <div style="display:flex;flex-direction:column;gap:4px;">
+                                    <div style="font-size:14px;font-weight:600;color:#1f2328;">@item.ProductTitle</div>
+                                    @if (!string.IsNullOrWhiteSpace(item.SizeName) || !string.IsNullOrWhiteSpace(item.ColorName))
+                                    {
+                                        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                                            @if (!string.IsNullOrWhiteSpace(item.SizeName))
+                                            {
+                                                <span style="display:inline-block;padding:4px 10px;border-radius:999px;background:#0f6cbd;color:#ffffff;font-size:12px;font-weight:600;">@item.SizeName</span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(item.ColorName))
+                                            {
+                                                <span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;background:#f3f2f1;color:#323130;font-size:12px;font-weight:600;border:1px solid #e1dfdd;">
+                                                    @if (!string.IsNullOrWhiteSpace(item.ColorHex) && item.ColorHex != "#d2d0ce")
+                                                    {
+                                                        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;border:1px solid rgba(0,0,0,0.2);background:@item.ColorHex;"></span>
+                                                    }
+                                                    @item.ColorName
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                <div style="font-size:14px;font-weight:700;color:#1f2328;white-space:nowrap;">@item.UnitPrice.ToString("C", CultureInfo.GetCultureInfo("nl-NL"))</div>
+                            </div>
+                        }
+                        <div style="display:flex;justify-content:flex-end;padding-top:12px;">
+                            <span style="font-size:16px;font-weight:700;color:#1f2328;">Total: @order.TotalAmount.ToString("C", CultureInfo.GetCultureInfo("nl-NL"))</span>
+                        </div>
+                    </div>
+                    <div style="padding:12px 20px;background:#f5f5f5;border-top:1px solid #e1dfdd;display:flex;justify-content:flex-end;">
+                        <FluentButton Appearance="Appearance.Stealth"
+                                      IconStart="@(new Icons.Regular.Size16.Delete())"
+                                      Title="Delete order"
+                                      @onclick="() => OpenDeleteOrderConfirmation(order)" />
+                    </div>
+                </div>
+            }
+        </FluentStack>
+    }
+
+    @if (_showDeleteDialog && _orderToDelete != null)
+    {
+        <FluentDialog @ref="_deleteDialog" Modal="true" TrapFocus="true">
+            <FluentDialogBody>
+                <FluentLabel>@string.Format(Localizer["DeleteOrderConfirmation"].ToString(), _orderToDelete.CustomerEmail, _orderToDelete.Id)</FluentLabel>
+            </FluentDialogBody>
+            <FluentDialogFooter>
+                <FluentButton OnClick="CloseDeleteDialog">@Localizer["Cancel"]</FluentButton>
+                <FluentButton Appearance="Appearance.Accent" OnClick="DeleteOrderAsync">@Localizer["Delete"]</FluentButton>
+            </FluentDialogFooter>
+        </FluentDialog>
+    }
+</FluentDialogBody>
+
+<FluentDialogFooter>
+    <FluentButton OnClick="CloseAsync">@Localizer["Close"]</FluentButton>
+    <FluentButton Appearance="Appearance.Accent" OnClick="ReloadAsync">@Localizer["Refresh"]</FluentButton>
+</FluentDialogFooter>
+
+@code {
+    [CascadingParameter]
+    public FluentDialog Dialog { get; set; } = default!;
+
+    private List<Order> _orders = [];
+    private Order? _orderToDelete;
+    private bool _showDeleteDialog;
+    private FluentDialog? _deleteDialog;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrdersAsync();
+    }
+
+    private async Task LoadOrdersAsync()
+    {
+        try
+        {
+            _errorMessage = null;
+            _orders = await DbContext.Orders
+                .Include(o => o.Items)
+                .OrderByDescending(o => o.CreatedAtUtc)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        await LoadOrdersAsync();
+        StateHasChanged();
+    }
+
+    private void OpenDeleteOrderConfirmation(Order order)
+    {
+        _orderToDelete = order;
+        _showDeleteDialog = true;
+    }
+
+    private void CloseDeleteDialog()
+    {
+        _showDeleteDialog = false;
+        _orderToDelete = null;
+    }
+
+    private async Task DeleteOrderAsync()
+    {
+        if (_orderToDelete == null) return;
+
+        try
+        {
+            DbContext.Orders.Remove(_orderToDelete);
+            await DbContext.SaveChangesAsync();
+            CloseDeleteDialog();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            CloseDeleteDialog();
+        }
+    }
+
+    private async Task CloseAsync() => await Dialog.CancelAsync();
+}

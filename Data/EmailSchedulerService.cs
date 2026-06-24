@@ -146,13 +146,14 @@ public sealed class EmailSchedulerService : IEmailSchedulerService
             throw new InvalidOperationException("No valid recipient email addresses.");
 
         var orders = await _dbContext.Orders
+            .Where(o => !o.IsSentInScheduledEmail)
             .Include(o => o.Items)
             .OrderBy(o => o.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
         if (orders.Count == 0)
         {
-            _logger.LogWarning("No orders found to include in scheduled email.");
+            _logger.LogWarning("No unsent orders found to include in scheduled email.");
             return;
         }
 
@@ -176,7 +177,9 @@ public sealed class EmailSchedulerService : IEmailSchedulerService
 
         using var smtpClient = new SmtpClient();
         smtpClient.LocalEndPoint = new IPEndPoint(IPAddress.Any, 0);
-        await smtpClient.ConnectAsync(_emailSettings.SmtpHost, 587, SecureSocketOptions.StartTls, cancellationToken);
+        await smtpClient.ConnectAsync(_emailSettings.SmtpHost, _emailSettings.SmtpPort, 
+            _emailSettings.UseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTlsWhenAvailable, 
+            cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(_emailSettings.UserName))
         {
@@ -188,6 +191,12 @@ public sealed class EmailSchedulerService : IEmailSchedulerService
 
         await smtpClient.SendAsync(message, cancellationToken);
         await smtpClient.DisconnectAsync(true, cancellationToken);
+
+        foreach (var order in orders)
+        {
+            order.IsSentInScheduledEmail = true;
+        }
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private string ResolveFromAddress()

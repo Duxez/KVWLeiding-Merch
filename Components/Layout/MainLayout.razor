@@ -39,6 +39,11 @@
                                   OnClick="OpenScheduleEmailDialogAsync">
                         @Localizer["ScheduleEmail"]
                     </FluentButton>
+                    <FluentButton Appearance="Appearance.Accent"
+                                  IconStart="@(new Icons.Regular.Size20.Receipt())"
+                                  OnClick="OpenManageOrdersDialogAsync">
+                        @Localizer["ManageOrders"]
+                    </FluentButton>
                 }
                 <div class="language-switcher">
                     <FluentSwitch Value="@(_themeMode == DesignThemeModes.Dark)"
@@ -273,6 +278,21 @@
         };
 
         await DialogService.ShowDialogAsync<ScheduleEmailDialog>(parameters);
+    }
+
+    private async Task OpenManageOrdersDialogAsync()
+    {
+        var parameters = new DialogParameters
+        {
+            Title = Localizer["ManageOrders"],
+            PrimaryAction = null,
+            SecondaryAction = null,
+            Width = "800px",
+            TrapFocus = true,
+            Modal = true,
+        };
+
+        await DialogService.ShowDialogAsync<ManageOrdersDialog>(parameters);
     }
 
     private async Task OpenCartDialogAsync()
