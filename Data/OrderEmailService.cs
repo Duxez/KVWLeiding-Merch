@@ -37,46 +37,12 @@ public sealed class OrderEmailService : IOrderEmailService
             .Select(e => e.EmailAddress)
             .ToListAsync(cancellationToken);
 
-        if (adminEmails.Count == 0)
-            throw new InvalidOperationException("No order recipient emails configured in the database.");
-
         var fromAddress = ResolveFromAddress();
-
-        var recipients = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            customerEmail.Trim(),
-        };
-
-        foreach (var adminEmail in adminEmails)
-        {
-            if (!string.IsNullOrWhiteSpace(adminEmail))
-            {
-                recipients.Add(adminEmail.Trim());
-            }
-        }
-
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(_settings.FromName ?? "KVW Merch", fromAddress));
-
-        foreach (var recipient in recipients)
-        {
-            message.To.Add(MailboxAddress.Parse(recipient));
-        }
-
-        message.Subject = (_settings.Title + " order") ?? "KVW Merch order";
-
-        var bodyBuilder = new BodyBuilder
-        {
-            TextBody = BuildPlainTextBody(customerEmail, items),
-            HtmlBody = BuildHtmlBody(customerEmail, items),
-        };
-
-        message.Body = bodyBuilder.ToMessageBody();
-
-        using var smtpClient = new SmtpClient();
         var secureSocketOptions = _settings.UseSsl
             ? SecureSocketOptions.SslOnConnect
             : SecureSocketOptions.StartTlsWhenAvailable;
+
+        using var smtpClient = new SmtpClient();
         smtpClient.LocalEndPoint = new IPEndPoint(IPAddress.Any, 0);
         await smtpClient.ConnectAsync(_settings.SmtpHost, _settings.SmtpPort, secureSocketOptions, cancellationToken);
 
@@ -88,8 +54,42 @@ public sealed class OrderEmailService : IOrderEmailService
                 cancellationToken);
         }
 
-        await smtpClient.SendAsync(message, cancellationToken);
-        await smtpClient.DisconnectAsync(true, cancellationToken);
+        try
+        {
+            var plainTextBody = BuildPlainTextBody(customerEmail, items);
+            var htmlBody = BuildHtmlBody(customerEmail, items);
+            var subject = (_settings.Title + " order") ?? "KVW Merch order";
+
+            if (!string.IsNullOrWhiteSpace(customerEmail))
+            {
+                var customerMessage = new MimeMessage();
+                customerMessage.From.Add(new MailboxAddress(_settings.FromName ?? "KVW Merch", fromAddress));
+                customerMessage.To.Add(MailboxAddress.Parse(customerEmail.Trim()));
+                customerMessage.Subject = subject;
+                customerMessage.Body = new TextPart("html") { Text = htmlBody };
+                await smtpClient.SendAsync(customerMessage, cancellationToken);
+            }
+
+            if (adminEmails.Count > 0)
+            {
+                var adminMessage = new MimeMessage();
+                adminMessage.From.Add(new MailboxAddress(_settings.FromName ?? "KVW Merch", fromAddress));
+                foreach (var adminEmail in adminEmails)
+                {
+                    if (!string.IsNullOrWhiteSpace(adminEmail))
+                    {
+                        adminMessage.To.Add(MailboxAddress.Parse(adminEmail.Trim()));
+                    }
+                }
+                adminMessage.Subject = subject;
+                adminMessage.Body = new TextPart("html") { Text = htmlBody };
+                await smtpClient.SendAsync(adminMessage, cancellationToken);
+            }
+        }
+        finally
+        {
+            await smtpClient.DisconnectAsync(true, cancellationToken);
+        }
     }
 
     private string ResolveFromAddress()
