@@ -1,0 +1,158 @@
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Localization
+@using System.Net.Mail
+@using kvwleidingmerch.Data
+@using Microsoft.AspNetCore.Components
+@inject AppDbContext DbContext
+@inject IStringLocalizer<SharedResource> Localizer
+@implements IDialogContentComponent
+
+<FluentDialogBody Style="overflow-y:auto;max-height:calc(90vh - 140px);padding-right:4px">
+    <FluentStack Orientation="Orientation.Vertical" VerticalGap="12">
+        <FluentLabel Weight="FontWeight.Bold">@CurrentOrderRecipientEmailsLabel</FluentLabel>
+        
+        @if (_emails.Count == 0)
+        {
+            <FluentLabel Style="opacity:0.6">@NoOrderRecipientEmailsAddedLabel</FluentLabel>
+        }
+        else
+        {
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="8">
+                @foreach (var email in _emails)
+                {
+                    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8" VerticalAlignment="VerticalAlignment.Center" Style="width:100%">
+                        <FluentLabel Style="flex:1">@email.EmailAddress</FluentLabel>
+                        <FluentButton Appearance="Appearance.Stealth"
+                                          IconStart="@(new Icons.Regular.Size16.Delete())"
+                                          Title="@DeleteLabel"
+                                          @onclick="() => DeleteEmail(email)" />
+                    </FluentStack>
+                }
+            </FluentStack>
+        }
+
+        <FluentLabel Weight="FontWeight.Bold">@AddNewOrderRecipientEmailLabel</FluentLabel>
+        
+        <FluentTextField @bind-Value="_newEmail"
+                         Label="@EmailAddressLabel"
+                         Placeholder="admin@example.com"
+                         style="width:100%" />
+
+        @if (!string.IsNullOrWhiteSpace(_errorMessage))
+        {
+            <FluentLabel Style="color:#b42318">@_errorMessage</FluentLabel>
+        }
+        
+        @if (!string.IsNullOrWhiteSpace(_successMessage))
+        {
+            <FluentLabel Style="color:#107c10">@_successMessage</FluentLabel>
+        }
+    </FluentStack>
+</FluentDialogBody>
+
+<FluentDialogFooter>
+    <FluentButton OnClick="CloseAsync">@CloseLabel</FluentButton>
+    <FluentButton Appearance="Appearance.Accent"
+                  OnClick="AddEmailAsync"
+                  Disabled="@(string.IsNullOrWhiteSpace(_newEmail) || _isSaving)">
+        @AddLabel
+    </FluentButton>
+</FluentDialogFooter>
+
+@code {
+    [CascadingParameter]
+    public FluentDialog Dialog { get; set; } = default!;
+
+    private List<OrderRecipientEmail> _emails = [];
+    private string _newEmail = string.Empty;
+    private string? _errorMessage;
+    private string? _successMessage;
+    private bool _isSaving;
+
+    private string CurrentOrderRecipientEmailsLabel => Localizer["CurrentOrderRecipientEmails"];
+    private string NoOrderRecipientEmailsAddedLabel => Localizer["NoOrderRecipientEmailsAdded"];
+    private string AddNewOrderRecipientEmailLabel => Localizer["AddNewOrderRecipientEmail"];
+    private string EmailAddressLabel => Localizer["EmailAddress"];
+    private string DeleteLabel => Localizer["Delete"];
+    private string CloseLabel => Localizer["Close"];
+    private string AddLabel => Localizer["Add"];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEmailsAsync();
+    }
+
+    private async Task LoadEmailsAsync()
+    {
+        _emails = await DbContext.OrderRecipientEmails
+            .OrderBy(e => e.EmailAddress)
+            .ToListAsync();
+    }
+
+    private async Task AddEmailAsync()
+    {
+        _errorMessage = null;
+        _successMessage = null;
+        _isSaving = true;
+
+        try
+        {
+            var trimmedEmail = _newEmail.Trim();
+            
+            if (string.IsNullOrWhiteSpace(trimmedEmail))
+            {
+                _errorMessage = Localizer["EmailIsRequired"];
+                return;
+            }
+
+            if (!MailAddress.TryCreate(trimmedEmail, out _))
+            {
+                _errorMessage = Localizer["InvalidEmailFormat"];
+                return;
+            }
+
+            if (_emails.Any(e => string.Equals(e.EmailAddress, trimmedEmail, StringComparison.OrdinalIgnoreCase)))
+            {
+                _errorMessage = Localizer["EmailAlreadyExists"];
+                return;
+            }
+
+            var email = new OrderRecipientEmail
+            {
+                EmailAddress = trimmedEmail,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            DbContext.OrderRecipientEmails.Add(email);
+            await DbContext.SaveChangesAsync();
+
+            _newEmail = string.Empty;
+            _successMessage = Localizer["EmailAddedSuccessfully"];
+            await LoadEmailsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteEmail(OrderRecipientEmail email)
+    {
+        try
+        {
+            DbContext.OrderRecipientEmails.Remove(email);
+            await DbContext.SaveChangesAsync();
+            await LoadEmailsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private async Task CloseAsync() => await Dialog.CancelAsync();
+}

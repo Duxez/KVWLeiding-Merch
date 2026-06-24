@@ -1,0 +1,213 @@
+@using System.Globalization
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Localization
+@using kvwleidingmerch.Data
+@using Microsoft.AspNetCore.Components
+@inject IEmailSchedulerService EmailSchedulerService
+@inject AppDbContext DbContext
+@inject IStringLocalizer<SharedResource> Localizer
+@implements IDialogContentComponent
+
+<FluentDialogBody Style="overflow-y:auto;max-height:calc(90vh - 140px);padding-right:4px">
+    <FluentStack Orientation="Orientation.Vertical" VerticalGap="12">
+        <FluentLabel Weight="FontWeight.Bold">@ScheduleEmailLabel</FluentLabel>
+        
+        <FluentLabel>@ScheduleEmailDescriptionLabel</FluentLabel>
+        
+        <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="12" VerticalAlignment="VerticalAlignment.Center">
+            <FluentTextField @bind-Value="_dateString" 
+                         Label="@DateLabel" 
+                         Placeholder="yyyy-MM-dd"
+                         style="flex:1" />
+            <FluentTextField @bind-Value="_timeString" 
+                         Label="@TimeLabel" 
+                         Placeholder="HH:mm"
+                         style="flex:1" />
+        </FluentStack>
+        
+        <FluentSelect TOption="string" @bind-Value="_selectedTimezone" Label="@TimezoneLabel">
+            <FluentOption Value="Europe/Amsterdam">Europe/Amsterdam (CET/CEST)</FluentOption>
+            <FluentOption Value="Europe/Brussels">Europe/Brussels</FluentOption>
+            <FluentOption Value="Europe/Paris">Europe/Paris</FluentOption>
+            <FluentOption Value="UTC">UTC</FluentOption>
+        </FluentSelect>
+        
+        @if (!string.IsNullOrWhiteSpace(_errorMessage))
+        {
+            <FluentLabel Style="color:#b42318">@_errorMessage</FluentLabel>
+        }
+        
+        @if (!string.IsNullOrWhiteSpace(_successMessage))
+        {
+            <FluentLabel Style="color:#107c10">@_successMessage</FluentLabel>
+        }
+        
+        @if (_existingScheduledEmails.Count > 0)
+        {
+            <FluentLabel Weight="FontWeight.Bold" Style="margin-top: 16px;">@ExistingScheduledEmailsLabel</FluentLabel>
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="8" Style="margin-top: 8px;">
+                @foreach (var scheduledEmail in _existingScheduledEmails)
+                {
+                    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="8" VerticalAlignment="VerticalAlignment.Center" Style="width:100%">
+                        <FluentStack Orientation="Orientation.Vertical" Style="flex:1">
+                            <FluentLabel>@scheduledEmail.Subject</FluentLabel>
+                            <FluentLabel Style="font-size:0.8rem;opacity:0.7;">
+                                @GetLocalizedDateTime(scheduledEmail)
+                            </FluentLabel>
+                        </FluentStack>
+                        <FluentBadge Appearance="@GetStatusAppearance(scheduledEmail.Status)">
+                            @GetLocalizedStatus(scheduledEmail.Status)
+                        </FluentBadge>
+                        <FluentButton Appearance="Appearance.Stealth"
+                                      IconStart="@(new Icons.Regular.Size16.Delete())"
+                                      Title="@DeleteLabel"
+                                      @onclick="() => DeleteScheduledEmail(scheduledEmail)" />
+                    </FluentStack>
+                }
+            </FluentStack>
+        }
+    </FluentStack>
+</FluentDialogBody>
+
+<FluentDialogFooter>
+    <FluentButton OnClick="CloseAsync">@CloseLabel</FluentButton>
+    <FluentButton Appearance="Appearance.Accent"
+                  OnClick="ScheduleEmailAsync"
+                  Disabled="@_isSaving">
+        @ScheduleLabel
+    </FluentButton>
+</FluentDialogFooter>
+
+@code {
+    [CascadingParameter]
+    public FluentDialog Dialog { get; set; } = default!;
+
+    private string _dateString = DateTime.Today.ToString("yyyy-MM-dd");
+    private string _timeString = DateTime.Now.ToString("HH:mm");
+    private string _selectedTimezone = "Europe/Amsterdam";
+    private string? _errorMessage;
+    private string? _successMessage;
+    private bool _isSaving;
+    private List<ScheduledEmail> _existingScheduledEmails = [];
+
+    private string ScheduleEmailLabel => Localizer["ScheduleEmail"];
+    private string ScheduleEmailDescriptionLabel => Localizer["ScheduleEmailDescription"];
+    private string DateLabel => Localizer["Date"];
+    private string TimeLabel => Localizer["Time"];
+    private string TimezoneLabel => Localizer["Timezone"];
+    private string ScheduleLabel => Localizer["Schedule"];
+    private string CloseLabel => Localizer["Close"];
+    private string DeleteLabel => Localizer["Delete"];
+    private string ExistingScheduledEmailsLabel => Localizer["ExistingScheduledEmails"];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadScheduledEmailsAsync();
+    }
+
+    private async Task LoadScheduledEmailsAsync()
+    {
+        _existingScheduledEmails = (await EmailSchedulerService.GetScheduledEmailsAsync()).ToList();
+    }
+
+    private async Task ScheduleEmailAsync()
+    {
+        _errorMessage = null;
+        _successMessage = null;
+        _isSaving = true;
+
+        try
+        {
+            if (!DateTime.TryParseExact(_dateString, "yyyy-MM-dd", null, DateTimeStyles.None, out var date))
+            {
+                _errorMessage = Localizer["InvalidDateFormat"];
+                return;
+            }
+
+            if (!TimeOnly.TryParseExact(_timeString, "HH:mm", null, DateTimeStyles.None, out var time))
+            {
+                _errorMessage = Localizer["InvalidTimeFormat"];
+                return;
+            }
+
+            var timezone = TimeZoneInfo.FindSystemTimeZoneById(_selectedTimezone);
+            
+            var dateTimeInTz = new DateTime(date.Year, date.Month, date.Day, time.Hour, time.Minute, 0);
+            
+            var utcTime = TimeZoneInfo.ConvertTimeToUtc(dateTimeInTz, timezone);
+            
+            if (utcTime <= DateTime.UtcNow)
+            {
+                _errorMessage = Localizer["ScheduledTimeMustBeInFuture"];
+                return;
+            }
+
+            await EmailSchedulerService.ScheduleEmailAsync(utcTime, _selectedTimezone);
+            
+            _successMessage = Localizer["EmailScheduledSuccessfully"];
+            await LoadScheduledEmailsAsync();
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            _errorMessage = Localizer["InvalidTimezone"];
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteScheduledEmail(ScheduledEmail scheduledEmail)
+    {
+        try
+        {
+            await EmailSchedulerService.DeleteScheduledEmailAsync(scheduledEmail.Id);
+            await LoadScheduledEmailsAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private async Task CloseAsync() => await Dialog.CancelAsync();
+
+    private string GetLocalizedDateTime(ScheduledEmail scheduledEmail)
+    {
+        try
+        {
+            var timezone = TimeZoneInfo.FindSystemTimeZoneById(scheduledEmail.Timezone);
+            var localTime = TimeZoneInfo.ConvertTimeFromUtc(scheduledEmail.ScheduledTimeUtc, timezone);
+            return localTime.ToString("yyyy-MM-dd HH:mm") + " (" + scheduledEmail.Timezone + ")";
+        }
+        catch
+        {
+            return scheduledEmail.ScheduledTimeUtc.ToString("yyyy-MM-dd HH:mm") + " UTC";
+        }
+    }
+
+    private Appearance GetStatusAppearance(string status)
+    {
+        return status switch
+        {
+            "Completed" => Appearance.Accent,
+            "Failed" => Appearance.Neutral,
+            _ => Appearance.Neutral
+        };
+    }
+
+    private string GetLocalizedStatus(string status)
+    {
+        return status switch
+        {
+            "Pending" => Localizer["Pending"],
+            "Completed" => Localizer["Completed"],
+            "Failed" => Localizer["Failed"],
+            _ => status
+        };
+    }
+}

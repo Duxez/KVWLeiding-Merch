@@ -181,4 +181,92 @@
     <value>Prijs</value>
     <comment/>
   </data>
+  <data name="ManageOrderEmails" xml:space="preserve">
+    <value>Bestelmailadressen beheren</value>
+    <comment/>
+  </data>
+  <data name="CurrentOrderRecipientEmails" xml:space="preserve">
+    <value>Huidige ontvangers</value>
+    <comment/>
+  </data>
+  <data name="NoOrderRecipientEmailsAdded" xml:space="preserve">
+    <value>Nog geen ontvangers toegevoegd.</value>
+    <comment/>
+  </data>
+  <data name="AddNewOrderRecipientEmail" xml:space="preserve">
+    <value>Nieuwe ontvanger toevoegen</value>
+    <comment/>
+  </data>
+  <data name="EmailAddress" xml:space="preserve">
+    <value>Emailadres</value>
+    <comment/>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Toevoegen</value>
+    <comment/>
+  </data>
+  <data name="EmailIsRequired" xml:space="preserve">
+    <value>Emailadres is verplicht.</value>
+    <comment/>
+  </data>
+  <data name="InvalidEmailFormat" xml:space="preserve">
+    <value>Ongeldig emailadres.</value>
+    <comment/>
+  </data>
+  <data name="EmailAlreadyExists" xml:space="preserve">
+    <value>Dit emailadres bestaat al.</value>
+    <comment/>
+  </data>
+  <data name="EmailAddedSuccessfully" xml:space="preserve">
+    <value>Emailadres succesvol toegevoegd.</value>
+    <comment/>
+  </data>
+  <data name="OrderEmailMissing" xml:space="preserve">
+    <value>Vul een emailadres in om een bestelling te plaatsen.</value>
+  </data>
+  <data name="ScheduleEmail" xml:space="preserve">
+    <value>Plannen van e-mail</value>
+  </data>
+  <data name="ScheduleEmailDescription" xml:space="preserve">
+    <value>Kies een datum en tijd om een e-mail met alle bestellingen te verzenden.</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Datum</value>
+  </data>
+  <data name="Time" xml:space="preserve">
+    <value>Tijd</value>
+  </data>
+  <data name="Timezone" xml:space="preserve">
+    <value>Tijdzone</value>
+  </data>
+  <data name="Schedule" xml:space="preserve">
+    <value>Plannen</value>
+  </data>
+  <data name="ScheduledTimeMustBeInFuture" xml:space="preserve">
+    <value>De geplande tijd moet in de toekomst liggen.</value>
+  </data>
+  <data name="InvalidTimezone" xml:space="preserve">
+    <value>Ongeldige tijdzone.</value>
+  </data>
+  <data name="EmailScheduledSuccessfully" xml:space="preserve">
+    <value>E-mail succesvol gepland.</value>
+  </data>
+  <data name="ExistingScheduledEmails" xml:space="preserve">
+    <value>Geplande e-mails</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>In afwachting</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>Voltooid</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Mislukt</value>
+  </data>
+  <data name="InvalidDateFormat" xml:space="preserve">
+    <value>Ongeldig datumformaat. Gebruik JJJJ-MM-DD.</value>
+  </data>
+  <data name="InvalidTimeFormat" xml:space="preserve">
+    <value>Ongeldig tijdformaat. Gebruik UU:MM.</value>
+  </data>
 </root>

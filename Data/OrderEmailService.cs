@@ -3,6 +3,7 @@ using System.Net;
 using System.Globalization;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
@@ -16,10 +17,12 @@ public interface IOrderEmailService
 public sealed class OrderEmailService : IOrderEmailService
 {
     private readonly EmailSettings _settings;
+    private readonly AppDbContext _dbContext;
 
-    public OrderEmailService(IOptions<EmailSettings> emailOptions)
+    public OrderEmailService(IOptions<EmailSettings> emailOptions, AppDbContext dbContext)
     {
         _settings = emailOptions.Value;
+        _dbContext = dbContext;
     }
 
     public async Task SendOrderAsync(string customerEmail, IReadOnlyList<CartItem> items, CancellationToken cancellationToken = default)
@@ -30,16 +33,27 @@ public sealed class OrderEmailService : IOrderEmailService
         if (string.IsNullOrWhiteSpace(_settings.SmtpHost))
             throw new InvalidOperationException("Email:SmtpHost is not configured.");
 
-        if (string.IsNullOrWhiteSpace(_settings.OrdersRecipientAddress))
-            throw new InvalidOperationException("Email:OrdersRecipientAddress is not configured.");
+        var adminEmails = await _dbContext.OrderRecipientEmails
+            .Select(e => e.EmailAddress)
+            .ToListAsync(cancellationToken);
+
+        if (adminEmails.Count == 0)
+            throw new InvalidOperationException("No order recipient emails configured in the database.");
 
         var fromAddress = ResolveFromAddress();
 
         var recipients = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             customerEmail.Trim(),
-            _settings.OrdersRecipientAddress.Trim(),
         };
+
+        foreach (var adminEmail in adminEmails)
+        {
+            if (!string.IsNullOrWhiteSpace(adminEmail))
+            {
+                recipients.Add(adminEmail.Trim());
+            }
+        }
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(_settings.FromName ?? "KVW Merch", fromAddress));

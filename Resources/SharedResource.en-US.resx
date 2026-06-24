@@ -181,4 +181,92 @@
     <value>Price</value>
     <comment/>
   </data>
+  <data name="ManageOrderEmails" xml:space="preserve">
+    <value>Manage order emails</value>
+    <comment/>
+  </data>
+  <data name="CurrentOrderRecipientEmails" xml:space="preserve">
+    <value>Current recipients</value>
+    <comment/>
+  </data>
+  <data name="NoOrderRecipientEmailsAdded" xml:space="preserve">
+    <value>No recipients added yet.</value>
+    <comment/>
+  </data>
+  <data name="AddNewOrderRecipientEmail" xml:space="preserve">
+    <value>Add new recipient</value>
+    <comment/>
+  </data>
+  <data name="EmailAddress" xml:space="preserve">
+    <value>Email address</value>
+    <comment/>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Add</value>
+    <comment/>
+  </data>
+  <data name="EmailIsRequired" xml:space="preserve">
+    <value>Email address is required.</value>
+    <comment/>
+  </data>
+  <data name="InvalidEmailFormat" xml:space="preserve">
+    <value>Invalid email format.</value>
+    <comment/>
+  </data>
+  <data name="EmailAlreadyExists" xml:space="preserve">
+    <value>This email address already exists.</value>
+    <comment/>
+  </data>
+  <data name="EmailAddedSuccessfully" xml:space="preserve">
+    <value>Email address added successfully.</value>
+    <comment/>
+  </data>
+  <data name="OrderEmailMissing" xml:space="preserve">
+    <value>Please enter an email address to place an order.</value>
+  </data>
+  <data name="ScheduleEmail" xml:space="preserve">
+    <value>Schedule Email</value>
+  </data>
+  <data name="ScheduleEmailDescription" xml:space="preserve">
+    <value>Select a date and time to send an email with all orders.</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="Timezone" xml:space="preserve">
+    <value>Timezone</value>
+  </data>
+  <data name="Schedule" xml:space="preserve">
+    <value>Schedule</value>
+  </data>
+  <data name="ScheduledTimeMustBeInFuture" xml:space="preserve">
+    <value>The scheduled time must be in the future.</value>
+  </data>
+  <data name="InvalidTimezone" xml:space="preserve">
+    <value>Invalid timezone.</value>
+  </data>
+  <data name="EmailScheduledSuccessfully" xml:space="preserve">
+    <value>Email scheduled successfully.</value>
+  </data>
+  <data name="ExistingScheduledEmails" xml:space="preserve">
+    <value>Scheduled Emails</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="InvalidDateFormat" xml:space="preserve">
+    <value>Invalid date format. Use yyyy-MM-dd.</value>
+  </data>
+  <data name="InvalidTimeFormat" xml:space="preserve">
+    <value>Invalid time format. Use HH:mm.</value>
+  </data>
 </root>

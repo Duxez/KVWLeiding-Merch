@@ -14,6 +14,7 @@
 @inject IStringLocalizer<SharedResource> Localizer
 @inject AppDbContext DbContext
 @inject CartService CartService
+@inject IEmailSchedulerService EmailSchedulerService
 @implements IDisposable
 
 <FluentDesignTheme Mode="@_themeMode" ModeChanged="OnThemeModeChangedAsync" StorageName="kvw-design-theme">
@@ -26,6 +27,16 @@
                                   IconStart="@(new Icons.Regular.Size20.Add())"
                                   OnClick="OpenAddProductDialogAsync">
                         @Localizer["AddProduct"]
+                    </FluentButton>
+                    <FluentButton Appearance="Appearance.Accent"
+                                  IconStart="@(new Icons.Regular.Size20.Mail())"
+                                  OnClick="OpenManageOrderRecipientsDialogAsync">
+                        @Localizer["ManageOrderEmails"]
+                    </FluentButton>
+                    <FluentButton Appearance="Appearance.Accent"
+                                  IconStart="@(new Icons.Regular.Size20.Clock())"
+                                  OnClick="OpenScheduleEmailDialogAsync">
+                        @Localizer["ScheduleEmail"]
                     </FluentButton>
                 }
                 <div class="language-switcher">
@@ -220,6 +231,36 @@
         };
 
         await DialogService.ShowDialogAsync<AddProductDialog>(model, parameters);
+    }
+
+    private async Task OpenManageOrderRecipientsDialogAsync()
+    {
+        var parameters = new DialogParameters
+        {
+            Title = Localizer["ManageOrderEmails"],
+            PrimaryAction = null,
+            SecondaryAction = null,
+            Width = "480px",
+            TrapFocus = true,
+            Modal = true,
+        };
+
+        await DialogService.ShowDialogAsync<ManageOrderRecipientsDialog>(parameters);
+    }
+
+    private async Task OpenScheduleEmailDialogAsync()
+    {
+        var parameters = new DialogParameters
+        {
+            Title = Localizer["ScheduleEmail"],
+            PrimaryAction = null,
+            SecondaryAction = null,
+            Width = "480px",
+            TrapFocus = true,
+            Modal = true,
+        };
+
+        await DialogService.ShowDialogAsync<ScheduleEmailDialog>(parameters);
     }
 
     private async Task OpenCartDialogAsync()

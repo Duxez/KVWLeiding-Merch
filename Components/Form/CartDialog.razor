@@ -6,6 +6,7 @@
 @inject CartService CartService
 @inject ICookieService CookieService
 @inject IOrderEmailService OrderEmailService
+@inject AppDbContext DbContext
 @inject IStringLocalizer<SharedResource> Localizer
 @implements IDialogContentComponent
 
@@ -109,6 +110,34 @@
                 _errorMessage = Localizer["OrderEmailMissing"];
                 return;
             }
+
+            var total = CartService.Items.Sum(i => i.UnitPrice);
+            
+            var order = new Order
+            {
+                CustomerEmail = customerEmail,
+                TotalAmount = total,
+                CreatedAtUtc = DateTime.UtcNow,
+                Status = "Completed"
+            };
+
+            foreach (var item in CartService.Items)
+            {
+                order.Items.Add(new OrderItem
+                {
+                    ProductId = item.ProductId,
+                    ProductTitle = item.ProductTitle,
+                    UnitPrice = item.UnitPrice,
+                    SizeId = item.SizeId,
+                    SizeName = item.SizeName,
+                    ColorId = item.ColorId,
+                    ColorName = item.ColorName,
+                    ColorHex = item.ColorHex
+                });
+            }
+
+            DbContext.Orders.Add(order);
+            await DbContext.SaveChangesAsync();
 
             await OrderEmailService.SendOrderAsync(customerEmail, CartService.Items);
             CartService.Clear();

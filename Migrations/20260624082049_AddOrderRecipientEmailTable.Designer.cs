@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using kvwleidingmerch.Data;
 
@@ -10,9 +11,11 @@ using kvwleidingmerch.Data;
 namespace kvwleidingmerch.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624082049_AddOrderRecipientEmailTable")]
+    partial class AddOrderRecipientEmailTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
@@ -93,85 +96,6 @@ namespace kvwleidingmerch.Migrations
                     b.ToTable("Colors");
                 });
 
-            modelBuilder.Entity("kvwleidingmerch.Data.Order", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CustomerEmail")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("Pending");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("decimal(10,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedAtUtc");
-
-                    b.ToTable("Orders");
-                });
-
-            modelBuilder.Entity("kvwleidingmerch.Data.OrderItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ColorHex")
-                        .IsRequired()
-                        .HasMaxLength(7)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("ColorId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ColorName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("OrderId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ProductTitle")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("SizeId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("SizeName")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(10,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrderId");
-
-                    b.ToTable("OrderItems");
-                });
-
             modelBuilder.Entity("kvwleidingmerch.Data.OrderRecipientEmail", b =>
                 {
                     b.Property<int>("Id")
@@ -245,52 +169,6 @@ namespace kvwleidingmerch.Migrations
                     b.ToTable("ProductUnavailableVariants");
                 });
 
-            modelBuilder.Entity("kvwleidingmerch.Data.ScheduledEmail", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("ScheduledTimeUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("SentAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("Pending");
-
-                    b.Property<string>("Subject")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Timezone")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("Europe/Amsterdam");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ScheduledTimeUtc");
-
-                    b.HasIndex("Status");
-
-                    b.ToTable("ScheduledEmails");
-                });
-
             modelBuilder.Entity("kvwleidingmerch.Data.Size", b =>
                 {
                     b.Property<int>("Id")
@@ -340,17 +218,6 @@ namespace kvwleidingmerch.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("kvwleidingmerch.Data.OrderItem", b =>
-                {
-                    b.HasOne("kvwleidingmerch.Data.Order", "Order")
-                        .WithMany("Items")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Order");
-                });
-
             modelBuilder.Entity("kvwleidingmerch.Data.ProductUnavailableVariant", b =>
                 {
                     b.HasOne("kvwleidingmerch.Data.Color", "Color")
@@ -376,11 +243,6 @@ namespace kvwleidingmerch.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("Size");
-                });
-
-            modelBuilder.Entity("kvwleidingmerch.Data.Order", b =>
-                {
-                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("kvwleidingmerch.Data.Product", b =>

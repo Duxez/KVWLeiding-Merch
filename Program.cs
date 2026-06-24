@@ -42,6 +42,8 @@ builder.Services.AddScoped<IColorNameResolver, ColorNameResolver>();
 builder.Services.AddScoped<ProductEventService>();
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<IOrderEmailService, OrderEmailService>();
+builder.Services.AddHostedService<ScheduledEmailBackgroundService>();
+builder.Services.AddScoped<IEmailSchedulerService, EmailSchedulerService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=app.db"));
@@ -54,15 +56,14 @@ var emailSettings = app.Configuration
     ?? new EmailSettings();
 
 app.Logger.LogInformation(
-    "Email settings loaded: SmtpHost={SmtpHost}, SmtpPort={SmtpPort}, UseSsl={UseSsl}, UserName={UserName}, Password={Password}, FromAddress={FromAddress}, FromName={FromName}, OrdersRecipientAddress={OrdersRecipientAddress}",
+    "Email settings loaded: SmtpHost={SmtpHost}, SmtpPort={SmtpPort}, UseSsl={UseSsl}, UserName={UserName}, Password={Password}, FromAddress={FromAddress}, FromName={FromName}",
     string.IsNullOrWhiteSpace(emailSettings.SmtpHost) ? "(empty)" : emailSettings.SmtpHost,
     emailSettings.SmtpPort,
     emailSettings.UseSsl,
     string.IsNullOrWhiteSpace(emailSettings.UserName) ? "(empty)" : emailSettings.UserName,
     MaskSecret(emailSettings.Password),
     string.IsNullOrWhiteSpace(emailSettings.FromAddress) ? "(empty)" : emailSettings.FromAddress,
-    string.IsNullOrWhiteSpace(emailSettings.FromName) ? "(empty)" : emailSettings.FromName,
-    string.IsNullOrWhiteSpace(emailSettings.OrdersRecipientAddress) ? "(empty)" : emailSettings.OrdersRecipientAddress);
+    string.IsNullOrWhiteSpace(emailSettings.FromName) ? "(empty)" : emailSettings.FromName);
 
 using (var scope = app.Services.CreateScope())
 {
