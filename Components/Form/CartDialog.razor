@@ -26,16 +26,25 @@
                     <div class="cart-item-info">
                         <FluentLabel Typo="Typography.Subject">@item.ProductTitle</FluentLabel>
                         <FluentLabel Typo="Typography.Body">@item.UnitPrice.ToString("C", CultureInfo.CurrentCulture)</FluentLabel>
-                        <div class="cart-item-badges">
-                            <FluentBadge Appearance="Appearance.Accent">@item.SizeName</FluentBadge>
-                            <FluentBadge>
-                                @if (!string.IsNullOrWhiteSpace(item.ColorHex))
+                        @if (!string.IsNullOrWhiteSpace(item.SizeName) || !string.IsNullOrWhiteSpace(item.ColorName))
+                        {
+                            <div class="cart-item-badges">
+                                @if (!string.IsNullOrWhiteSpace(item.SizeName))
                                 {
-                                    <span class="color-dot" style="background-color:@item.ColorHex"></span>
+                                    <FluentBadge Appearance="Appearance.Accent">@item.SizeName</FluentBadge>
                                 }
-                                @item.ColorName
-                            </FluentBadge>
-                        </div>
+                                @if (!string.IsNullOrWhiteSpace(item.ColorName))
+                                {
+                                    <FluentBadge>
+                                        @if (!string.IsNullOrWhiteSpace(item.ColorHex))
+                                        {
+                                            <span class="color-dot" style="background-color:@item.ColorHex"></span>
+                                        }
+                                        @item.ColorName
+                                    </FluentBadge>
+                                }
+                            </div>
+                        }
                     </div>
                     <FluentButton Appearance="Appearance.Stealth"
                                   IconStart="@(new Icons.Regular.Size16.Delete())"

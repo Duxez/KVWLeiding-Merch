@@ -9,9 +9,9 @@ public sealed class CartItem
     public int ProductId { get; set; }
     public string ProductTitle { get; set; } = string.Empty;
     public decimal UnitPrice { get; set; }
-    public int SizeId { get; set; }
+    public int? SizeId { get; set; }
     public string SizeName { get; set; } = string.Empty;
-    public int ColorId { get; set; }
+    public int? ColorId { get; set; }
     public string ColorName { get; set; } = string.Empty;
     public string ColorHex { get; set; } = string.Empty;
 }
@@ -58,7 +58,10 @@ public sealed class CartService
                 return;
 
             _items.Clear();
-            _items.AddRange(savedItems);
+            foreach (var item in savedItems)
+            {
+                _items.Add(NormalizeCartItem(item));
+            }
             OnCartChanged?.Invoke();
         }
         catch
@@ -112,6 +115,15 @@ public sealed class CartService
         {
             // Keep cart usable in-memory even if cookie persistence fails.
         }
+    }
+
+    private static CartItem NormalizeCartItem(CartItem item)
+    {
+        if (item.SizeId == 0)
+            item.SizeId = null;
+        if (item.ColorId == 0)
+            item.ColorId = null;
+        return item;
     }
 
     private static string EncodeToBase64(string value)

@@ -2,10 +2,12 @@
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Localization
 @using System.Globalization
+@using Microsoft.FluentUI.AspNetCore.Components
 @inject kvwleidingmerch.Data.AppDbContext DbContext
 @inject kvwleidingmerch.Data.ProductEventService ProductEventService
 @inject kvwleidingmerch.Data.CartService CartService
 @inject IStringLocalizer<SharedResource> Localizer
+@inject IDialogService DialogService
 @implements IDisposable
 
 <PageTitle>Merch</PageTitle>
@@ -16,6 +18,24 @@
 }
 else
 {
+    @if (_showDeleteDialog && _productToDelete != null)
+    {
+        <FluentDialog @ref="_deleteDialog" Modal="true" TrapFocus="true">
+            <FluentDialogBody>
+                <FluentLabel>@string.Format(Localizer["DeleteProductConfirmation"].ToString(), _productToDelete.Title)</FluentLabel>
+            </FluentDialogBody>
+            <FluentDialogFooter>
+                <FluentButton OnClick="CloseDeleteDialog">@Localizer["Cancel"]</FluentButton>
+                <FluentButton Appearance="Appearance.Accent" OnClick="DeleteProductAsync">@Localizer["Delete"]</FluentButton>
+            </FluentDialogFooter>
+        </FluentDialog>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <FluentLabel Style="color:#b42318;padding:1rem;display:block">@_errorMessage</FluentLabel>
+    }
+
     <div class="product-grid">
         @foreach (var product in _products)
         {
@@ -110,6 +130,13 @@ else
                                 @Localizer["AddToCart"]
                             </FluentButton>
                         }
+                        @if (IsOwner)
+                        {
+                            <FluentButton Appearance="Appearance.Stealth"
+                                          IconStart="@(new Icons.Regular.Size20.Delete())"
+                                          Title="@DeleteLabel"
+                                          @onclick="() => OpenDeleteConfirmation(product)" />
+                        }
                     </div>
                 </div>
             </FluentCard>
@@ -120,14 +147,20 @@ else
 @code {
     [CascadingParameter(Name = "IsOwner")] public bool IsOwner { get; set; }
     [CascadingParameter(Name = "IsAccess")] public bool IsAccess { get; set; }
+    private string DeleteLabel => Localizer["Delete"];
 
     private List<kvwleidingmerch.Data.Product> _products = [];
     private readonly Dictionary<int, int> _selectedSizes = [];
     private readonly Dictionary<int, int> _selectedColors = [];
+    private kvwleidingmerch.Data.Product? _productToDelete;
+    private bool _showDeleteDialog;
+    private string? _errorMessage;
+    private FluentDialog? _deleteDialog;
 
     protected override async Task OnInitializedAsync()
     {
         ProductEventService.OnProductAdded += OnProductAdded;
+        ProductEventService.OnProductDeleted += OnProductDeleted;
         await LoadProductsAsync();
     }
 
@@ -188,9 +221,9 @@ else
             ProductId = product.Id,
             ProductTitle = product.Title,
             UnitPrice = product.Price,
-            SizeId = sizeId,
+            SizeId = sizeId != 0 ? sizeId : null,
             SizeName = sizeName,
-            ColorId = colorId,
+            ColorId = colorId != 0 ? colorId : null,
             ColorName = colorEntity?.Name ?? string.Empty,
             ColorHex = colorEntity?.HexCode ?? string.Empty,
         });
@@ -208,8 +241,51 @@ else
         });
     }
 
+    private void OnProductDeleted()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await LoadProductsAsync();
+            StateHasChanged();
+        });
+    }
+
+    private void OpenDeleteConfirmation(kvwleidingmerch.Data.Product product)
+    {
+        _productToDelete = product;
+        _showDeleteDialog = true;
+    }
+
+    private void CloseDeleteDialog()
+    {
+        _showDeleteDialog = false;
+        _productToDelete = null;
+        _errorMessage = null;
+    }
+
+    private async Task DeleteProductAsync()
+    {
+        if (_productToDelete == null) return;
+
+        try
+        {
+            DbContext.Products.Remove(_productToDelete);
+            await DbContext.SaveChangesAsync();
+            ProductEventService.NotifyProductDeleted();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            CloseDeleteDialog();
+        }
+    }
+
     public void Dispose()
     {
         ProductEventService.OnProductAdded -= OnProductAdded;
+        ProductEventService.OnProductDeleted -= OnProductDeleted;
     }
 }

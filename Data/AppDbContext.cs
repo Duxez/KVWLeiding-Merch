@@ -134,6 +134,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(i => i.UnitPrice)
                 .HasColumnType("decimal(10,2)")
                 .IsRequired();
+            entity.Property(i => i.SizeId);
+            entity.Property(i => i.ColorId);
             entity.HasOne(i => i.Order)
                 .WithMany(o => o.Items)
                 .HasForeignKey(i => i.OrderId)
@@ -263,11 +265,11 @@ public sealed class OrderItem
 
     public decimal UnitPrice { get; set; }
 
-    public int SizeId { get; set; }
+    public int? SizeId { get; set; }
 
     public string SizeName { get; set; } = string.Empty;
 
-    public int ColorId { get; set; }
+    public int? ColorId { get; set; }
 
     public string ColorName { get; set; } = string.Empty;
 

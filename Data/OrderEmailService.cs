@@ -118,7 +118,9 @@ public sealed class OrderEmailService : IOrderEmailService
         for (int i = 0; i < items.Count; i++)
         {
             var item = items[i];
-            body.AppendLine($"{i + 1}. {item.ProductTitle} | Size: {item.SizeName} | Color: {item.ColorName} | Price: {FormatMoney(item.UnitPrice)}");
+            var sizeInfo = string.IsNullOrWhiteSpace(item.SizeName) ? "" : $" | Size: {item.SizeName}";
+            var colorInfo = string.IsNullOrWhiteSpace(item.ColorName) ? "" : $" | Color: {item.ColorName}";
+            body.AppendLine($"{i + 1}. {item.ProductTitle}{sizeInfo}{colorInfo} | Price: {FormatMoney(item.UnitPrice)}");
         }
 
         body.AppendLine();
@@ -140,25 +142,25 @@ public sealed class OrderEmailService : IOrderEmailService
             var colorName = HtmlEncode(item.ColorName);
             var colorHex = NormalizeHex(item.ColorHex);
             var linePrice = FormatMoney(item.UnitPrice);
+            var hasSize = !string.IsNullOrWhiteSpace(sizeName);
+            var hasColor = !string.IsNullOrWhiteSpace(colorName);
 
-            itemsHtml.Append($"""
+            itemsHtml.Append("""
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #e0e0e0;">
                     <div style="display:flex;flex-direction:column;gap:4px;">
-                        <div style="font-size:16px;font-weight:600;color:#1f2328;">{productTitle}</div>
-                        <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                            <span style="display:inline-block;padding:4px 10px;border-radius:999px;background:#0f6cbd;color:#ffffff;font-size:12px;font-weight:600;">{sizeName}</span>
-                            <span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;background:#f3f2f1;color:#323130;font-size:12px;font-weight:600;border:1px solid #e1dfdd;">
-                                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;border:1px solid rgba(0,0,0,0.2);background:{colorHex};"></span>
-                                {colorName}
-                            </span>
-                        </div>
-                    </div>
-                    <div style="font-size:14px;font-weight:700;color:#1f2328;white-space:nowrap;">{linePrice}</div>
-                </div>
+                        <div style="font-size:16px;font-weight:600;color:#1f2328;">" + productTitle + "</div>" + (hasSize || hasColor ? 
+                        "<div style=\"display:flex;flex-wrap:wrap;gap:6px;\">" + (hasSize ? 
+                        "<span style=\"display:inline-block;padding:4px 10px;border-radius:999px;background:#0f6cbd;color:#ffffff;font-size:12px;font-weight:600;\">" + sizeName + "</span>" : "") + (hasColor ? 
+                        "<span style=\"display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;background:#f3f2f1;color:#323130;font-size:12px;font-weight:600;border:1px solid #e1dfdd;\">" + (!string.IsNullOrWhiteSpace(colorHex) && colorHex != "#d2d0ce" ? 
+                        "<span style=\"display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;border:1px solid rgba(0,0,0,0.2);background:" + colorHex + ";\"></span>" : "") + colorName + "</span>" : "") + 
+                        "</div>" : "") + 
+                    "</div>" +
+                    "<div style=\"font-size:14px;font-weight:700;color:#1f2328;white-space:nowrap;\">" + linePrice + "</div>" +
+                "</div>" + 
                 """);
         }
 
-        return $"""
+        return """
             <!doctype html>
             <html>
             <body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Arial,sans-serif;color:#1f2328;">
@@ -167,19 +169,19 @@ public sealed class OrderEmailService : IOrderEmailService
                         <div style="padding:16px 20px;background:#0f6cbd;color:#ffffff;font-size:18px;font-weight:700;">KVW Merch order</div>
                         <div style="padding:16px 20px;">
                             <div style="font-size:14px;color:#605e5c;margin-bottom:4px;">Customer email</div>
-                            <div style="font-size:15px;font-weight:600;margin-bottom:14px;">{HtmlEncode(customerEmail)}</div>
-                            <div style="font-size:14px;color:#605e5c;margin-bottom:4px;">Order date (UTC)</div>
-                            <div style="font-size:15px;font-weight:600;margin-bottom:14px;">{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}</div>
-                            <div style="font-size:15px;font-weight:700;margin-bottom:4px;">Items ({items.Count})</div>
-                            <div>{itemsHtml}</div>
-                            <div style="display:flex;justify-content:flex-end;padding-top:12px;">
-                                <span style="font-size:16px;font-weight:700;color:#1f2328;">Total: {FormatMoney(total)}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </body>
-            </html>
+                            <div style="font-size:15px;font-weight:600;margin-bottom:14px;">" + HtmlEncode(customerEmail) + "</div>" +
+                            "<div style=\"font-size:14px;color:#605e5c;margin-bottom:4px;\">Order date (UTC)</div>" +
+                            "<div style=\"font-size:15px;font-weight:600;margin-bottom:14px;\">" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "</div>" +
+                            "<div style=\"font-size:15px;font-weight:700;margin-bottom:4px;\">Items (" + items.Count + ")</div>" +
+                            "<div>" + itemsHtml.ToString() + "</div>" +
+                            "<div style=\"display:flex;justify-content:flex-end;padding-top:12px;\">" +
+                                "<span style=\"font-size:16px;font-weight:700;color:#1f2328;\">Total: " + FormatMoney(total) + "</span>" +
+                            "</div>" +
+                        "</div>" +
+                    "</div>" +
+                "</div>" +
+            "</body>" +
+            "</html>" +
             """;
     }
 
