@@ -5,6 +5,7 @@ using BitzArt.Blazor.Cookies;
 using kvwleidingmerch.Components;
 using kvwleidingmerch.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,7 +47,8 @@ builder.Services.AddHostedService<ScheduledEmailBackgroundService>();
 builder.Services.AddScoped<IEmailSchedulerService, EmailSchedulerService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=app.db"));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=app.db")
+           .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
 var app = builder.Build();
 
