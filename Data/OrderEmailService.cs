@@ -131,8 +131,26 @@ public sealed class OrderEmailService : IOrderEmailService
 
     private static string BuildHtmlBody(string customerEmail, IReadOnlyList<CartItem> items)
     {
-        var itemsHtml = new StringBuilder();
+        var html = new StringBuilder();
         var total = items.Sum(i => i.UnitPrice);
+
+        html.AppendLine("<!doctype html>");
+        html.AppendLine("<html>");
+        html.AppendLine("<body style=\"margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Arial,sans-serif;color:#1f2328;\">");
+        html.AppendLine("    <div style=\"max-width:640px;margin:24px auto;padding:0 12px;\">");
+        html.AppendLine("        <div style=\"background:#ffffff;border:1px solid #e1dfdd;border-radius:12px;overflow:hidden;\">");
+        html.AppendLine("            <div style=\"padding:16px 20px;background:#0f6cbd;color:#ffffff;font-size:18px;font-weight:700;\">KVW Merch order</div>");
+        html.AppendLine("            <div style=\"padding:16px 20px;\">");
+        html.AppendLine("                <div style=\"font-size:14px;color:#605e5c;margin-bottom:4px;\">Customer email</div>");
+        html.Append($"                <div style=\"font-size:15px;font-weight:600;margin-bottom:14px;\">");
+        html.Append(HtmlEncode(customerEmail));
+        html.AppendLine("</div>");
+        html.AppendLine("                <div style=\"font-size:14px;color:#605e5c;margin-bottom:4px;\">Order date (UTC)</div>");
+        html.Append($"                <div style=\"font-size:15px;font-weight:600;margin-bottom:14px;\">");
+        html.Append(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
+        html.AppendLine("</div>");
+        html.AppendLine($"                <div style=\"font-size:15px;font-weight:700;margin-bottom:4px;\">Items ({items.Count})</div>");
+        html.AppendLine("                <div>");
 
         for (int i = 0; i < items.Count; i++)
         {
@@ -145,44 +163,46 @@ public sealed class OrderEmailService : IOrderEmailService
             var hasSize = !string.IsNullOrWhiteSpace(sizeName);
             var hasColor = !string.IsNullOrWhiteSpace(colorName);
 
-            itemsHtml.Append("""
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #e0e0e0;">
-                    <div style="display:flex;flex-direction:column;gap:4px;">
-                        <div style="font-size:16px;font-weight:600;color:#1f2328;">" + productTitle + "</div>" + (hasSize || hasColor ? 
-                        "<div style=\"display:flex;flex-wrap:wrap;gap:6px;\">" + (hasSize ? 
-                        "<span style=\"display:inline-block;padding:4px 10px;border-radius:999px;background:#0f6cbd;color:#ffffff;font-size:12px;font-weight:600;\">" + sizeName + "</span>" : "") + (hasColor ? 
-                        "<span style=\"display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;background:#f3f2f1;color:#323130;font-size:12px;font-weight:600;border:1px solid #e1dfdd;\">" + (!string.IsNullOrWhiteSpace(colorHex) && colorHex != "#d2d0ce" ? 
-                        "<span style=\"display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;border:1px solid rgba(0,0,0,0.2);background:" + colorHex + ";\"></span>" : "") + colorName + "</span>" : "") + 
-                        "</div>" : "") + 
-                    "</div>" +
-                    "<div style=\"font-size:14px;font-weight:700;color:#1f2328;white-space:nowrap;\">" + linePrice + "</div>" +
-                "</div>" + 
-                """);
+            html.AppendLine("                    <div style=\"display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #e0e0e0;\">");
+            html.AppendLine("                        <div style=\"display:flex;flex-direction:column;gap:4px;\">");
+            html.AppendLine($"                            <div style=\"font-size:16px;font-weight:600;color:#1f2328;\">{productTitle}</div>");
+            
+            if (hasSize || hasColor)
+            {
+                html.AppendLine("                            <div style=\"display:flex;flex-wrap:wrap;gap:6px;\">");
+                if (hasSize)
+                {
+                    html.AppendLine($"                                <span style=\"display:inline-block;padding:4px 10px;border-radius:999px;background:#0f6cbd;color:#ffffff;font-size:12px;font-weight:600;\">{sizeName}</span>");
+                }
+                if (hasColor)
+                {
+                    html.Append("                                <span style=\"display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;background:#f3f2f1;color:#323130;font-size:12px;font-weight:600;border:1px solid #e1dfdd;\">");
+                    if (!string.IsNullOrWhiteSpace(colorHex) && colorHex != "#d2d0ce")
+                    {
+                        html.Append($"<span style=\"display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;border:1px solid rgba(0,0,0,0.2);background:{colorHex};\"></span>");
+                    }
+                    html.Append(colorName);
+                    html.AppendLine("</span>");
+                }
+                html.AppendLine("                            </div>");
+            }
+            
+            html.AppendLine("                        </div>");
+            html.AppendLine($"                        <div style=\"font-size:14px;font-weight:700;color:#1f2328;white-space:nowrap;\">{linePrice}</div>");
+            html.AppendLine("                    </div>");
         }
 
-        return """
-            <!doctype html>
-            <html>
-            <body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Arial,sans-serif;color:#1f2328;">
-                <div style="max-width:640px;margin:24px auto;padding:0 12px;">
-                    <div style="background:#ffffff;border:1px solid #e1dfdd;border-radius:12px;overflow:hidden;">
-                        <div style="padding:16px 20px;background:#0f6cbd;color:#ffffff;font-size:18px;font-weight:700;">KVW Merch order</div>
-                        <div style="padding:16px 20px;">
-                            <div style="font-size:14px;color:#605e5c;margin-bottom:4px;">Customer email</div>
-                            <div style="font-size:15px;font-weight:600;margin-bottom:14px;">" + HtmlEncode(customerEmail) + "</div>" +
-                            "<div style=\"font-size:14px;color:#605e5c;margin-bottom:4px;\">Order date (UTC)</div>" +
-                            "<div style=\"font-size:15px;font-weight:600;margin-bottom:14px;\">" + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + "</div>" +
-                            "<div style=\"font-size:15px;font-weight:700;margin-bottom:4px;\">Items (" + items.Count + ")</div>" +
-                            "<div>" + itemsHtml.ToString() + "</div>" +
-                            "<div style=\"display:flex;justify-content:flex-end;padding-top:12px;\">" +
-                                "<span style=\"font-size:16px;font-weight:700;color:#1f2328;\">Total: " + FormatMoney(total) + "</span>" +
-                            "</div>" +
-                        "</div>" +
-                    "</div>" +
-                "</div>" +
-            "</body>" +
-            "</html>" +
-            """;
+        html.AppendLine("                </div>");
+        html.AppendLine("                <div style=\"display:flex;justify-content:flex-end;padding-top:12px;\">");
+        html.Append($"                    <span style=\"font-size:16px;font-weight:700;color:#1f2328;\">Total: {FormatMoney(total)}</span>");
+        html.AppendLine("                </div>");
+        html.AppendLine("            </div>");
+        html.AppendLine("        </div>");
+        html.AppendLine("    </div>");
+        html.AppendLine("</body>");
+        html.AppendLine("</html>");
+
+        return html.ToString();
     }
 
     private static string HtmlEncode(string? value)
