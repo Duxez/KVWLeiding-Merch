@@ -1,4 +1,4 @@
-﻿@using BitzArt.Blazor.Cookies
+@using BitzArt.Blazor.Cookies
 @using System.Globalization
 @using System.Net.Mail
 @using Microsoft.AspNetCore.Localization
@@ -14,6 +14,7 @@
 @inject IStringLocalizer<SharedResource> Localizer
 @inject AppDbContext DbContext
 @inject CartService CartService
+@inject Microsoft.Extensions.Options.IOptions<EmailSettings> EmailOptions
 @inject IEmailSchedulerService EmailSchedulerService
 @implements IDisposable
 
@@ -105,6 +106,17 @@
 
     public bool access = false;
 
+    private string InitialEmailDialogTitle
+    {
+        get
+        {
+            var configuredTitle = EmailOptions.Value.Title;
+            return string.IsNullOrWhiteSpace(configuredTitle)
+                ? "KVW Tilburg Noord merch"
+                : configuredTitle;
+        }
+    }
+
     protected override void OnInitialized()
     {
         CartService.OnCartChanged += OnCartChanged;
@@ -135,7 +147,7 @@
 
         DialogParameters parameters = new DialogParameters
         {
-            Title = "KVW Tilburg Noord merch",
+            Title = InitialEmailDialogTitle,
             PrimaryAction = null,
             SecondaryAction = null,
             Width = "400px",
